@@ -1,0 +1,61 @@
+import crypto from "crypto";
+import { PUBLIC_KEY } from "./publicKey";
+
+const secret = PUBLIC_KEY;
+
+export function decodeJwt(token: string) {
+  const payload = token.split(".")[1];
+  return JSON.parse(atob(payload));
+}
+
+export const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
+
+export async function encryptWithPublicKey(data: object) {
+  // --- Convert PEM ke CryptoKey ---
+  const pemHeader = "-----BEGIN PUBLIC KEY-----";
+  const pemFooter = "-----END PUBLIC KEY-----";
+  const pemContents = secret
+    .replace(pemHeader, "")
+    .replace(pemFooter, "")
+    .replace(/\s/g, "");
+
+  const binaryDer = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
+
+  const key = await window.crypto.subtle.importKey(
+    "spki",
+    binaryDer.buffer,
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-256",
+    },
+    false,
+    ["encrypt"]
+  );
+
+  // --- Encrypt ---
+  const encoded = new TextEncoder().encode(JSON.stringify(data));
+  const encrypted = await window.crypto.subtle.encrypt(
+    {
+      name: "RSA-OAEP",
+    },
+    key,
+    encoded
+  );
+
+  // Convert ke base64 supaya aman dikirim ke server
+  return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+}
