@@ -17,6 +17,9 @@ import OverviewTab from "@/components/organisms/OverviewTabComponent";
 import ScheduleTab from "@/components/organisms/ScheduleTabComponent";
 import UsersTab from "@/components/organisms/UserTabComponent";
 import NewsTab from "@/components/organisms/NewsTabComponent";
+import VenueManagement from "@/components/organisms/VenueManagement";
+import RuleManagement from "@/components/organisms/RuleManagement";
+import FacilityManagement from "@/components/organisms/FacilityManagement";
 
 // Tabs Components
 function Tabs({ value, onValueChange, className, children }: any) {
@@ -208,7 +211,7 @@ export default function AdminPage() {
           onValueChange={setSelectedTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger
               value="overview"
               onClick={setSelectedTab}
@@ -236,6 +239,27 @@ export default function AdminPage() {
               isActive={selectedTab === "news"}
             >
               Berita
+            </TabsTrigger>
+            <TabsTrigger
+              value="venues"
+              onClick={setSelectedTab}
+              isActive={selectedTab === "venues"}
+            >
+              Venues
+            </TabsTrigger>
+            <TabsTrigger
+              value="rules"
+              onClick={setSelectedTab}
+              isActive={selectedTab === "rules"}
+            >
+              Rules
+            </TabsTrigger>
+            <TabsTrigger
+              value="facilities"
+              onClick={setSelectedTab}
+              isActive={selectedTab === "facilities"}
+            >
+              Facilities
             </TabsTrigger>
             <TabsTrigger
               value="settings"
@@ -280,6 +304,33 @@ export default function AdminPage() {
             className="space-y-6"
           >
             <NewsTab />
+          </TabsContent>
+
+          {/* Venues Tab */}
+          <TabsContent
+            value="venues"
+            activeTab={selectedTab}
+            className="space-y-6"
+          >
+            <VenueManagement />
+          </TabsContent>
+
+          {/* Rules Tab */}
+          <TabsContent
+            value="rules"
+            activeTab={selectedTab}
+            className="space-y-6"
+          >
+            <RuleManagement />
+          </TabsContent>
+
+          {/* Facilities Tab */}
+          <TabsContent
+            value="facilities"
+            activeTab={selectedTab}
+            className="space-y-6"
+          >
+            <FacilityManagement />
           </TabsContent>
 
           {/* Settings Tab - Placeholder */}
