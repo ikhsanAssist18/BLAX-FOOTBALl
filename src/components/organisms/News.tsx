@@ -7,15 +7,6 @@ import { News } from "@/types/news";
 import { useNotifications } from "./NotificationContainer";
 import { newsService } from "@/utils/news";
 
-interface NewsItem {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  thumbnail: string;
-  readTime?: string;
-}
-
 export default function NewsSection() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);

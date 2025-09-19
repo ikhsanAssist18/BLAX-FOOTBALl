@@ -1,6 +1,7 @@
 import { ScheduleOverview } from "@/types/schedule";
 import { apiClient } from "./api";
 import { UserManagement } from "@/types/admin";
+import { News } from "@/types/news";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/auth`;
 class AdminService {
@@ -69,6 +70,23 @@ class AdminService {
     );
 
     return response.data;
+  }
+
+  async createNews(
+    news: Omit<News, "id" | "publishAt" | "readTime">
+  ): Promise<News | null> {
+    try {
+      const response = await apiClient.post(`/api/v1/news/add-news`, news);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Something went wrong!");
+      }
+
+      return result.data;
+    } catch (error) {
+      return null;
+    }
   }
 }
 
