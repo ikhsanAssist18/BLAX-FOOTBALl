@@ -5,7 +5,7 @@ export class ApiClient {
   private baseURL: string;
 
   private constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_BE || "/api";
+    this.baseURL = process.env.NEXT_PUBLIC_BE!;
   }
 
   static getInstance(): ApiClient {
@@ -31,12 +31,18 @@ export class ApiClient {
   private async handleResponse(response: Response): Promise<any> {
     // Check for authentication errors
     if (response.status === 401 || response.status === 403) {
-      // Auto signout on authentication errors
-      AuthService.clearSession();
+      // Cek session
+      const session = await AuthService.getSession();
 
-      // Redirect to home page
       if (typeof window !== "undefined") {
-        window.location.href = "/";
+        if (session?.isAdmin) {
+          window.location.href = "/b/auth/login";
+        } else {
+          window.location.href = "/";
+        }
+
+        // Auto signout on authentication errors
+        AuthService.clearSession();
       }
 
       throw new Error("Authentication failed. Please sign in again.");

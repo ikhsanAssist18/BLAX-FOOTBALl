@@ -30,3 +30,17 @@ interface Facilites {
 export interface Rules {
   description: string;
 }
+
+export interface ScheduleOverview {
+  date: string;
+  time: string;
+  feeGk: number;
+  feePlayer: number;
+  name: string;
+  venue: string;
+  openSlots: number;
+  bookedSlots: number;
+  totalSlots: number;
+  revenue: number;
+  status: string;
+}

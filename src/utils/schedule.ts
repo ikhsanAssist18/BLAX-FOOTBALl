@@ -1,5 +1,4 @@
 import { Schedule, ScheduleDetail } from "@/types/schedule";
-import { apiClient } from "./api";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/matches`;
 

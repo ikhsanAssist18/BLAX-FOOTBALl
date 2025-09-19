@@ -2,7 +2,7 @@ import React from "react";
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "black";
   size?: "sm" | "md" | "lg";
   className?: string;
   onClick?: (e: any) => void;
@@ -44,6 +44,7 @@ export default function Button({
     primary:
       "bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white",
     secondary: "bg-gray-100 hover:bg-gray-200 text-gray-700",
+    black: "bg-black text-white",
     outline:
       "border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50 backdrop-blur-sm",
     danger: "bg-red-500 hover:bg-red-600 text-white",

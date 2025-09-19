@@ -23,14 +23,12 @@ export interface PolicyVerification {
 }
 
 export interface UserManagement {
-  id: string;
+  name: string;
   email: string;
-  created_at: string;
-  last_sign_in_at?: string;
-  user_profiles?: {
-    name: string;
-  };
-  admin_users?: AdminUser;
+  phone: string;
+  role: string;
+  gamesPlayed: number;
+  lastPlayed: string | null;
 }
 
 export interface ContentModeration {

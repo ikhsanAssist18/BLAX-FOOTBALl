@@ -7,7 +7,6 @@ import {
 } from "@/types/auth";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/auth`;
-console.log("object", API_BASE_URL);
 
 export class AuthService {
   static async signUp(data: SignUpRequest): Promise<AuthResponse> {
@@ -81,8 +80,13 @@ export class AuthService {
   }
 
   // Local storage helpers
-  static saveSession(session: { access_token: string; expires_at: number }) {
+  static saveSession(session: {
+    access_token: string;
+    expires_at: number;
+    isAdmin?: boolean;
+  }) {
     if (typeof window !== "undefined") {
+      console.log("session utils", session);
       localStorage.setItem("auth_session", JSON.stringify(session));
     }
   }
@@ -91,7 +95,6 @@ export class AuthService {
     if (typeof window !== "undefined") {
       const session = localStorage.getItem("auth_session");
       if (session) {
-        console.log("test", JSON.parse(session));
         return JSON.parse(session);
       }
       return null;
