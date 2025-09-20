@@ -45,6 +45,7 @@ import {
 import Input from "@/components/atoms/Input";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import Pagination from "../atoms/Pagination";
+import { TableLoadingSkeleton } from "./LoadingSkeleton";
 
 interface UsersTabProps {
   showSuccess?: (message: string) => void;
@@ -333,57 +334,21 @@ export default function UsersTab() {
   };
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
-          </div>
-          <div className="flex space-x-2">
-            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-        </div>
-
-        <StatsSkeleton />
-
-        {/* Filters Skeleton */}
-        <Card className="animate-pulse">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 h-10 bg-gray-200 rounded"></div>
-              <div className="flex gap-4">
-                <div className="w-32 h-10 bg-gray-200 rounded"></div>
-                <div className="w-32 h-10 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Users Skeleton */}
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <UserCardSkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    );
+    return <TableLoadingSkeleton />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-          <p className="text-gray-600 mt-1">
-            Manage user accounts and permissions
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Manajemen Pengguna</h2>
+          <p className="text-sm md:text-base text-gray-600 mt-1">
+            Kelola akun pengguna dan izin akses
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 md:space-x-3">
           {selectedUsers.length > 0 && (
             <Button
               variant="danger"
@@ -391,8 +356,9 @@ export default function UsersTab() {
               onClick={() => setShowBulkDeleteConfirm(true)}
               className="flex items-center"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete ({selectedUsers.length})
+              <Trash2 className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
+              <span className="hidden md:inline">Hapus ({selectedUsers.length})</span>
+              <span className="md:hidden">({selectedUsers.length})</span>
             </Button>
           )}
 
@@ -402,8 +368,9 @@ export default function UsersTab() {
             onClick={() => setShowUserDialog(true)}
             className="flex items-center"
           >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add User
+            <UserPlus className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
+            <span className="hidden md:inline">Tambah Pengguna</span>
+            <span className="md:hidden">Tambah</span>
           </Button>
         </div>
       </div>

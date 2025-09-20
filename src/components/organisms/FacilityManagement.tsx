@@ -36,6 +36,7 @@ import {
 } from "@/utils/masterData";
 import Badge from "../atoms/Badge";
 import Pagination from "../atoms/Pagination";
+import { CardsLoadingSkeleton } from "./LoadingSkeleton";
 
 // Facility icons mapping
 const facilityIcons: Record<string, any> = {
@@ -305,59 +306,23 @@ export default function FacilityManagement() {
   };
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
-          </div>
-          <div className="flex space-x-2">
-            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-        </div>
-
-        <StatsSkeleton />
-
-        {/* Filters Skeleton */}
-        <Card className="animate-pulse">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 h-10 bg-gray-200 rounded"></div>
-              <div className="flex gap-4">
-                <div className="w-24 h-10 bg-gray-200 rounded"></div>
-                <div className="w-24 h-10 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Facilities Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <FacilityCardSkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    );
+    return <CardsLoadingSkeleton />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Facility Management
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+            Manajemen Fasilitas
           </h2>
-          <p className="text-gray-600 mt-1">
-            Manage venue facilities and amenities
+          <p className="text-sm md:text-base text-gray-600 mt-1">
+            Kelola fasilitas dan amenitas venue
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 md:space-x-3">
           {selectedFacilities.length > 0 && (
             <Button
               variant="danger"
@@ -365,8 +330,9 @@ export default function FacilityManagement() {
               onClick={() => setShowBulkDeleteConfirm(true)}
               className="flex items-center"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete ({selectedFacilities.length})
+              <Trash2 className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
+              <span className="hidden md:inline">Hapus ({selectedFacilities.length})</span>
+              <span className="md:hidden">({selectedFacilities.length})</span>
             </Button>
           )}
 
@@ -377,8 +343,9 @@ export default function FacilityManagement() {
             disabled={loading}
             className="flex items-center"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Facility
+            <Plus className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
+            <span className="hidden md:inline">Tambah Fasilitas</span>
+            <span className="md:hidden">Tambah</span>
           </Button>
         </div>
       </div>
