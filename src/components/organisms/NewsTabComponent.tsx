@@ -345,7 +345,7 @@ export default function NewsTab() {
                   </div>
 
                   <CardContent className="p-6">
-                    <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-bold text-lg mb-2 pt-6 line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {item.title}
                     </h3>
                     <p className="text-sm text-gray-600 mb-4 line-clamp-3">

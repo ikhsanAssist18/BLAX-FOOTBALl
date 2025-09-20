@@ -21,7 +21,11 @@ import {
 } from "../atoms/Table";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import { useNotifications } from "./NotificationContainer";
-import { masterDataService, Facility, FacilityPayload } from "@/utils/masterData";
+import {
+  masterDataService,
+  Facility,
+  FacilityPayload,
+} from "@/utils/masterData";
 
 export default function FacilityManagement() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -104,7 +108,9 @@ export default function FacilityManagement() {
       console.error("Error saving facility:", error);
       showError(
         "Error",
-        editingFacility ? "Failed to update facility" : "Failed to create facility"
+        editingFacility
+          ? "Failed to update facility"
+          : "Failed to create facility"
       );
     } finally {
       setSubmitting(false);
@@ -152,9 +158,12 @@ export default function FacilityManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-        <h2 className="text-2xl font-bold text-gray-900">Facility Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Facility Management
+        </h2>
         <Button
-          variant="primary"
+          variant="black"
+          size="sm"
           onClick={() => setShowDialog(true)}
           disabled={loading}
         >
@@ -214,7 +223,11 @@ export default function FacilityManagement() {
                     : "Get started by adding your first facility"}
                 </p>
                 {!searchTerm && (
-                  <Button variant="primary" onClick={() => setShowDialog(true)}>
+                  <Button
+                    variant="black"
+                    size="sm"
+                    onClick={() => setShowDialog(true)}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Add First Facility
                   </Button>
@@ -224,7 +237,10 @@ export default function FacilityManagement() {
           </div>
         ) : (
           facilities.map((facility) => (
-            <Card key={facility.id} className="hover:shadow-lg transition-shadow">
+            <Card
+              key={facility.id}
+              className="hover:shadow-lg transition-shadow"
+            >
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center">
@@ -236,7 +252,9 @@ export default function FacilityManagement() {
                     </h3>
                     <p className="text-sm text-gray-500">
                       {facility.createdAt
-                        ? `Added ${new Date(facility.createdAt).toLocaleDateString()}`
+                        ? `Added ${new Date(
+                            facility.createdAt
+                          ).toLocaleDateString()}`
                         : "Recently added"}
                     </p>
                   </div>
@@ -325,12 +343,18 @@ export default function FacilityManagement() {
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={handleCloseDialog}
                 disabled={submitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
+              <Button
+                type="submit"
+                variant="black"
+                size="sm"
+                disabled={submitting}
+              >
                 {submitting
                   ? editingFacility
                     ? "Updating..."

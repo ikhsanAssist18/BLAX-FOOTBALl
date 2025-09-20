@@ -39,7 +39,7 @@ export default function VenueManagement() {
 
   const [formData, setFormData] = useState<VenuePayload>({
     name: "",
-    gmapsLink: "",
+    gmapLink: "",
     address: "",
   });
 
@@ -54,13 +54,8 @@ export default function VenueManagement() {
   const fetchVenues = async () => {
     try {
       setLoading(true);
-      const response = await masterDataService.getVenues(
-        searchTerm,
-        currentPage,
-        10
-      );
-      setVenues(response.data);
-      setTotalPages(Math.ceil(response.total / response.limit));
+      const response = await masterDataService.getVenues(searchTerm);
+      setVenues(response);
     } catch (error) {
       console.error("Error fetching venues:", error);
       showError("Error", "Failed to load venues");
@@ -80,10 +75,10 @@ export default function VenueManagement() {
       errors.address = "Address is required";
     }
 
-    if (!formData.gmapsLink.trim()) {
-      errors.gmapsLink = "Google Maps link is required";
-    } else if (!isValidUrl(formData.gmapsLink)) {
-      errors.gmapsLink = "Please enter a valid URL";
+    if (!formData.gmapLink.trim()) {
+      errors.gmapLink = "Google Maps link is required";
+    } else if (!isValidUrl(formData.gmapLink)) {
+      errors.gmapLink = "Please enter a valid URL";
     }
 
     setFormErrors(errors);
@@ -134,7 +129,7 @@ export default function VenueManagement() {
     setEditingVenue(venue);
     setFormData({
       name: venue.name,
-      gmapsLink: venue.gmapsLink,
+      gmapLink: venue.gmapLink,
       address: venue.address,
     });
     setShowDialog(true);
@@ -157,7 +152,7 @@ export default function VenueManagement() {
   const handleCloseDialog = () => {
     setShowDialog(false);
     setEditingVenue(null);
-    setFormData({ name: "", gmapsLink: "", address: "" });
+    setFormData({ name: "", gmapLink: "", address: "" });
     setFormErrors({});
   };
 
@@ -175,7 +170,8 @@ export default function VenueManagement() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <h2 className="text-2xl font-bold text-gray-900">Venue Management</h2>
         <Button
-          variant="primary"
+          variant="black"
+          size="sm"
           onClick={() => setShowDialog(true)}
           disabled={loading}
         >
@@ -221,7 +217,7 @@ export default function VenueManagement() {
               <TableBody>
                 {venues.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
+                    <TableCell className="text-center py-8">
                       <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No venues found</p>
                     </TableCell>
@@ -229,13 +225,15 @@ export default function VenueManagement() {
                 ) : (
                   venues.map((venue) => (
                     <TableRow key={venue.id}>
-                      <TableCell className="font-medium">{venue.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {venue.name}
+                      </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {venue.address}
                       </TableCell>
                       <TableCell>
                         <a
-                          href={venue.gmapsLink}
+                          href={venue.gmapLink}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-blue-600 hover:text-blue-800"
@@ -340,7 +338,9 @@ export default function VenueManagement() {
                 }`}
               />
               {formErrors.address && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.address}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.address}
+                </p>
               )}
             </div>
 
@@ -350,14 +350,14 @@ export default function VenueManagement() {
               </label>
               <Input
                 type="url"
-                value={formData.gmapsLink}
-                onChange={(e) => handleInputChange("gmapsLink", e.target.value)}
+                value={formData.gmapLink}
+                onChange={(e) => handleInputChange("gmapLink", e.target.value)}
                 placeholder="https://maps.google.com/..."
-                className={formErrors.gmapsLink ? "border-red-500" : ""}
+                className={formErrors.gmapLink ? "border-red-500" : ""}
               />
-              {formErrors.gmapsLink && (
+              {formErrors.gmapLink && (
                 <p className="text-red-500 text-sm mt-1">
-                  {formErrors.gmapsLink}
+                  {formErrors.gmapLink}
                 </p>
               )}
             </div>
@@ -365,13 +365,19 @@ export default function VenueManagement() {
             <div className="flex justify-end space-x-3 pt-4">
               <Button
                 type="button"
+                size="sm"
                 variant="outline"
                 onClick={handleCloseDialog}
                 disabled={submitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
+              <Button
+                type="submit"
+                variant="black"
+                size="sm"
+                disabled={submitting}
+              >
                 {submitting
                   ? editingVenue
                     ? "Updating..."

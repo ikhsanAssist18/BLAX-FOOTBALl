@@ -57,8 +57,7 @@ export default function RuleManagement() {
         currentPage,
         10
       );
-      setRules(response.data);
-      setTotalPages(Math.ceil(response.total / response.limit));
+      setRules(response);
     } catch (error) {
       console.error("Error fetching rules:", error);
       showError("Error", "Failed to load rules");
@@ -154,7 +153,8 @@ export default function RuleManagement() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <h2 className="text-2xl font-bold text-gray-900">Rule Management</h2>
         <Button
-          variant="primary"
+          variant="black"
+          size="sm"
           onClick={() => setShowDialog(true)}
           disabled={loading}
         >
@@ -199,7 +199,7 @@ export default function RuleManagement() {
               <TableBody>
                 {rules.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8">
+                    <TableCell className="text-center py-8">
                       <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No rules found</p>
                     </TableCell>
@@ -310,12 +310,18 @@ export default function RuleManagement() {
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={handleCloseDialog}
                 disabled={submitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
+              <Button
+                type="submit"
+                variant="black"
+                size="sm"
+                disabled={submitting}
+              >
                 {submitting
                   ? editingRule
                     ? "Updating..."
