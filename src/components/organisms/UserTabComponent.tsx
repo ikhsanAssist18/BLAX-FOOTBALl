@@ -1,6 +1,25 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { 
+  Search, 
+  Filter, 
+  Download, 
+  Upload, 
+  Edit, 
+  Trash2, 
+  Eye, 
+  Users, 
+  UserPlus, 
+  UserCheck, 
+  UserX,
+  MoreHorizontal,
+  Mail,
+  Phone,
+  Calendar,
+  Trophy,
+  Star
+} from "lucide-react";
 import Button from "@/components/atoms/Button";
 import { Card, CardContent } from "@/components/atoms/Card";
 import {
@@ -17,27 +36,101 @@ import { adminService } from "@/utils/admin";
 import { useNotifications } from "@/components/organisms/NotificationContainer";
 import { Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/helper";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/atoms/Dialog";
+import Input from "@/components/atoms/Input";
+import ConfirmationModal from "../molecules/ConfirmationModal";
+import Pagination from "../atoms/Pagination";
 
 interface UsersTabProps {
   showSuccess?: (message: string) => void;
   showError?: (title: string, message: string) => void;
 }
 
+// Skeleton Components
+const UserCardSkeleton = () => (
+  <div className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
+    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+    <div className="flex-1 space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+      <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+      <div className="h-3 bg-gray-200 rounded w-1/5"></div>
+    </div>
+    <div className="space-y-2">
+      <div className="w-16 h-6 bg-gray-200 rounded"></div>
+      <div className="w-20 h-4 bg-gray-200 rounded"></div>
+    </div>
+    <div className="flex space-x-2">
+      <div className="w-8 h-8 bg-gray-200 rounded"></div>
+      <div className="w-8 h-8 bg-gray-200 rounded"></div>
+      <div className="w-8 h-8 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const StatsSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    {[...Array(4)].map((_, i) => (
+      <Card key={i} className="animate-pulse">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
+
 export default function UsersTab() {
   const [users, setUsers] = useState<UserManagement[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserManagement[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [showUserDialog, setShowUserDialog] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserManagement | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserManagement | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  
   const { showSuccess, showError } = useNotifications();
+
+  // Form state for add/edit user
+  const [userForm, setUserForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "user",
+  });
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchUsers();
-  }, [searchTerm]);
+  }, []);
+
+  useEffect(() => {
+    filterUsers();
+  }, [users, searchTerm, roleFilter, statusFilter]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const result = await adminService.getAllUsers(50, 0, searchTerm);
+      const result = await adminService.getAllUsers(100, 0, searchTerm);
       setUsers(result.users);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -47,104 +140,739 @@ export default function UsersTab() {
     }
   };
 
-  const handleViewUser = (phone: string) => {
-    const user = users.find((u) => u.phone === phone);
-    if (user && showSuccess) {
-      showSuccess(`Viewing details for ${user.name}`);
+  const filterUsers = () => {
+    let filtered = users;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.phone.includes(searchTerm)
+      );
     }
-    console.log("Viewing user:", phone);
+
+    // Role filter
+    if (roleFilter !== "all") {
+      filtered = filtered.filter(user => user.role === roleFilter);
+    }
+
+    // Status filter (based on recent activity)
+    if (statusFilter === "active") {
+      filtered = filtered.filter(user => user.lastPlayed && 
+        new Date(user.lastPlayed) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      );
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter(user => !user.lastPlayed || 
+        new Date(user.lastPlayed) <= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      );
+    }
+
+    setFilteredUsers(filtered);
+    setCurrentPage(1);
   };
 
-  const handleEditUser = (phone: string) => {
-    const user = users.find((u) => u.phone === phone);
-    if (user && showSuccess) {
-      showSuccess(`Editing user ${user.name}`);
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!userForm.name.trim()) errors.name = "Name is required";
+    if (!userForm.email.trim()) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(userForm.email)) errors.email = "Email is invalid";
+    if (!userForm.phone.trim()) errors.phone = "Phone is required";
+    else if (!/^\d{10,15}$/.test(userForm.phone.replace(/\D/g, ""))) {
+      errors.phone = "Phone number must be 10-15 digits";
     }
-    console.log("Editing user:", phone);
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleUserInputChange = (field: string, value: string) => {
+    setUserForm(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleSaveUser = async () => {
+    if (!validateForm()) return;
+
+    try {
+      setActionLoading("save");
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (editingUser) {
+        showSuccess("User updated successfully!");
+      } else {
+        showSuccess("User created successfully!");
+      }
+      
+      setShowUserDialog(false);
+      resetForm();
+      fetchUsers();
+    } catch (error) {
+      showError("Error", "Failed to save user");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const resetForm = () => {
+    setUserForm({
+      name: "",
+      email: "",
+      phone: "",
+      role: "user",
+    });
+    setFormErrors({});
+    setEditingUser(null);
+  };
+
+  const handleViewUser = (phone: string) => {
+    const user = users.find((u) => u.phone === phone);
+    if (user) {
+      showSuccess(`Viewing details for ${user.name}`);
+    }
+  };
+
+  const handleEditUser = (user: UserManagement) => {
+    setEditingUser(user);
+    setUserForm({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+    });
+    setShowUserDialog(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      setActionLoading("delete");
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      showSuccess("User deleted successfully!");
+      setShowDeleteConfirm(false);
+      setUserToDelete(null);
+      fetchUsers();
+    } catch (error) {
+      showError("Error", "Failed to delete user");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      setActionLoading("bulk-delete");
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      showSuccess(`${selectedUsers.length} users deleted successfully!`);
+      setShowBulkDeleteConfirm(false);
+      setSelectedUsers([]);
+      fetchUsers();
+    } catch (error) {
+      showError("Error", "Failed to delete users");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSelectUser = (phone: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(phone)
+        ? prev.filter(p => p !== phone)
+        : [...prev, phone]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUsers.length === paginatedUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(paginatedUsers.map(u => u.phone));
+    }
   };
 
   const handleExportUsers = () => {
-    // Here you would typically call an API to export users data
-    console.log("Exporting users data...");
-    if (showSuccess) {
-      showSuccess("Users data exported successfully!");
-    }
+    showSuccess("Users data exported successfully!");
+  };
+
+  // Get unique roles for filter
+  const uniqueRoles = [...new Set(users.map(u => u.role))];
+
+  // Pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+  // Stats calculation
+  const stats = {
+    total: users.length,
+    active: users.filter(u => u.lastPlayed && 
+      new Date(u.lastPlayed) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    ).length,
+    newThisMonth: users.filter(u => 
+      new Date() > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    ).length,
+    totalGames: users.reduce((sum, u) => sum + (u.gamesPlayed || 0), 0)
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <span className="ml-2 text-gray-600">Loading users...</span>
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
+          </div>
+          <div className="flex space-x-2">
+            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        <StatsSkeleton />
+
+        {/* Filters Skeleton */}
+        <Card className="animate-pulse">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 h-10 bg-gray-200 rounded"></div>
+              <div className="flex gap-4">
+                <div className="w-32 h-10 bg-gray-200 rounded"></div>
+                <div className="w-32 h-10 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Users Skeleton */}
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <UserCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Management Users</h2>
-        <div className="flex space-x-2">
-          <Button variant="black" size="sm" onClick={handleExportUsers}>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+          <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          {selectedUsers.length > 0 && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="flex items-center"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete ({selectedUsers.length})
+            </Button>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportUsers}
+            className="flex items-center"
+          >
+            <Download className="w-4 h-4 mr-2" />
             Export
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowUserDialog(true)}
+            className="flex items-center"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Add User
           </Button>
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.active}</p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <UserCheck className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">New This Month</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.newThisMonth}</p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <UserPlus className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Games</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.totalGames}</p>
+              </div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Trophy className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead>No. HP</TableHead>
-                <TableHead>Games Played</TableHead>
-                <TableHead>Last Play</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.phone}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.phone}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <span>{user.gamesPlayed ? user.gamesPlayed : "-"}</span>
-                      {user.gamesPlayed >= 10 && (
-                        <Badge variant="outline" className="text-xs">
-                          Eligible for voucher
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {user.lastPlayed ? formatDate(user.lastPlayed) : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewUser(user.phone)}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="black"
-                        onClick={() => handleEditUser(user.phone)}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search users by name, email, or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Roles</option>
+                {uniqueRoles.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Active Filters */}
+          {(searchTerm || roleFilter !== "all" || statusFilter !== "all") && (
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mr-2">Active filters:</p>
+              {searchTerm && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  Search: {searchTerm}
+                  <button onClick={() => setSearchTerm("")} className="ml-1 hover:text-blue-600">
+                    ×
+                  </button>
+                </span>
+              )}
+              {roleFilter !== "all" && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  Role: {roleFilter}
+                  <button onClick={() => setRoleFilter("all")} className="ml-1 hover:text-blue-600">
+                    ×
+                  </button>
+                </span>
+              )}
+              {statusFilter !== "all" && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  Status: {statusFilter}
+                  <button onClick={() => setStatusFilter("all")} className="ml-1 hover:text-blue-600">
+                    ×
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Results Info */}
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-600">
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
+        </p>
+        
+        {filteredUsers.length > 0 && (
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
+              onChange={handleSelectAll}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-600">Select all</span>
+          </div>
+        )}
+      </div>
+
+      {/* Users List */}
+      <Card>
+        <CardContent className="p-0">
+          {filteredUsers.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No users found</h3>
+              <p className="text-gray-600 mb-6">
+                {searchTerm || roleFilter !== "all" || statusFilter !== "all"
+                  ? "Try adjusting your search criteria"
+                  : "Get started by adding your first user"
+                }
+              </p>
+              {!searchTerm && roleFilter === "all" && statusFilter === "all" && (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowUserDialog(true)}
+                  className="flex items-center mx-auto"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add First User
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Games Played</TableHead>
+                  <TableHead>Last Activity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedUsers.map((user) => (
+                  <TableRow key={user.phone} className="hover:bg-gray-50">
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.phone)}
+                        onChange={() => handleSelectUser(user.phone)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{user.name}</div>
+                          <div className="text-sm text-gray-500">ID: {user.phone}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center text-sm">
+                          <Mail className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className="truncate max-w-[200px]">{user.email}</span>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <Phone className="w-4 h-4 text-gray-400 mr-2" />
+                          <span>{user.phone}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          user.role === "admin"
+                            ? "bg-purple-100 text-purple-800 border-purple-200"
+                            : "bg-gray-100 text-gray-800 border-gray-200"
+                        }
+                      >
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Trophy className="w-4 h-4 text-yellow-500" />
+                        <span className="font-medium">{user.gamesPlayed || 0}</span>
+                        {(user.gamesPlayed || 0) >= 10 && (
+                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                            VIP
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {user.lastPlayed ? (
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 text-gray-400 mr-1" />
+                            {formatDate(user.lastPlayed)}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Never</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          user.lastPlayed && 
+                          new Date(user.lastPlayed) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-gray-100 text-gray-800 border-gray-200"
+                        }
+                      >
+                        {user.lastPlayed && 
+                         new Date(user.lastPlayed) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                          ? "Active"
+                          : "Inactive"
+                        }
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewUser(user.phone)}
+                          className="hover:bg-blue-50"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditUser(user)}
+                          className="hover:bg-yellow-50"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setUserToDelete(user);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="hover:bg-red-50 text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
+
+      {/* Add/Edit User Dialog */}
+      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingUser ? "Edit User" : "Add New User"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Full Name *
+                </label>
+                <Input
+                  type="text"
+                  value={userForm.name}
+                  onChange={(e) => handleUserInputChange("name", e.target.value)}
+                  placeholder="Enter full name"
+                  className={formErrors.name ? "border-red-500" : ""}
+                />
+                {formErrors.name && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Email Address *
+                </label>
+                <Input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => handleUserInputChange("email", e.target.value)}
+                  placeholder="Enter email address"
+                  className={formErrors.email ? "border-red-500" : ""}
+                />
+                {formErrors.email && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Phone Number *
+                </label>
+                <Input
+                  type="tel"
+                  value={userForm.phone}
+                  onChange={(e) => handleUserInputChange("phone", e.target.value)}
+                  placeholder="Enter phone number"
+                  className={formErrors.phone ? "border-red-500" : ""}
+                />
+                {formErrors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.phone}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Role
+                </label>
+                <select
+                  value={userForm.role}
+                  onChange={(e) => handleUserInputChange("role", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                  <option value="moderator">Moderator</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUserDialog(false);
+                  resetForm();
+                }}
+                disabled={actionLoading === "save"}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSaveUser}
+                disabled={actionLoading === "save"}
+                className="flex items-center"
+              >
+                {actionLoading === "save" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {editingUser ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  editingUser ? "Update User" : "Create User"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={handleDeleteUser}
+        title="Delete User"
+        message={`Are you sure you want to delete "${userToDelete?.name}"? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={actionLoading === "delete"}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete Multiple Users"
+        message={`Are you sure you want to delete ${selectedUsers.length} selected users? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete All"
+        cancelText="Cancel"
+        isLoading={actionLoading === "bulk-delete"}
+      />
     </div>
   );
 }

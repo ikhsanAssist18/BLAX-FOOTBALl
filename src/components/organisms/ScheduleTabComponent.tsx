@@ -1,7 +1,22 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search, 
+  Filter, 
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  DollarSign,
+  Eye,
+  MoreHorizontal,
+  Download,
+  Upload
+} from "lucide-react";
 import Button from "@/components/atoms/Button";
 import { Card, CardContent } from "@/components/atoms/Card";
 import {
@@ -25,11 +40,54 @@ import { useNotifications } from "./NotificationContainer";
 import { scheduleService } from "@/utils/schedule";
 import { adminService } from "@/utils/admin";
 import { formatDate } from "@/lib/helper";
+import ConfirmationModal from "../molecules/ConfirmationModal";
+import Pagination from "../atoms/Pagination";
 
 interface ScheduleTabProps {
   showError: (title: string, message: string) => void;
   showSuccess: (message: string) => void;
 }
+
+// Skeleton Components
+const TableSkeleton = () => (
+  <div className="space-y-4">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
+        <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+        </div>
+        <div className="w-20 h-6 bg-gray-200 rounded"></div>
+        <div className="w-24 h-6 bg-gray-200 rounded"></div>
+        <div className="w-16 h-6 bg-gray-200 rounded"></div>
+        <div className="flex space-x-2">
+          <div className="w-8 h-8 bg-gray-200 rounded"></div>
+          <div className="w-8 h-8 bg-gray-200 rounded"></div>
+          <div className="w-8 h-8 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const StatsSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    {[...Array(4)].map((_, i) => (
+      <Card key={i} className="animate-pulse">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
 
 export default function ScheduleTab({
   showError,
@@ -37,16 +95,32 @@ export default function ScheduleTab({
 }: ScheduleTabProps) {
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [schedules, setSchedules] = useState<ScheduleOverview[]>([]);
+  const [filteredSchedules, setFilteredSchedules] = useState<ScheduleOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<ScheduleOverview | null>(null);
+  const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [venueFilter, setVenueFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<ScheduleOverview | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
-  // Form states for new schedule
+  // Form states for new/edit schedule
   const [scheduleForm, setScheduleForm] = useState({
+    name: "",
     date: "",
     time: "",
     venue: "",
-    slots: "16",
-    fee: "",
-    type: "",
+    totalSlots: "16",
+    feePlayer: "",
+    feeGk: "",
+    typeEvent: "",
+    typeMatch: "",
+    description: "",
     facilities: {
       "Air Mineral": true,
       Rompi: true,
@@ -56,9 +130,15 @@ export default function ScheduleTab({
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     fetchScheduleOverview();
   }, []);
+
+  useEffect(() => {
+    filterSchedules();
+  }, [schedules, searchTerm, statusFilter, venueFilter]);
 
   const fetchScheduleOverview = async () => {
     try {
@@ -68,7 +148,61 @@ export default function ScheduleTab({
     } catch (error) {
       console.error("Error fetching schedule overview:", error);
       showError("Error", "Failed to load schedule overview");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const filterSchedules = () => {
+    let filtered = schedules;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(schedule =>
+        schedule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        schedule.venue.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(schedule => schedule.status === statusFilter);
+    }
+
+    // Venue filter
+    if (venueFilter !== "all") {
+      filtered = filtered.filter(schedule => schedule.venue === venueFilter);
+    }
+
+    setFilteredSchedules(filtered);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!scheduleForm.name.trim()) errors.name = "Schedule name is required";
+    if (!scheduleForm.date) errors.date = "Date is required";
+    if (!scheduleForm.time) errors.time = "Time is required";
+    if (!scheduleForm.venue) errors.venue = "Venue is required";
+    if (!scheduleForm.feePlayer) errors.feePlayer = "Player fee is required";
+    if (!scheduleForm.feeGk) errors.feeGk = "Goalkeeper fee is required";
+    if (!scheduleForm.typeEvent) errors.typeEvent = "Event type is required";
+    if (!scheduleForm.typeMatch) errors.typeMatch = "Match type is required";
+
+    // Validate numeric fields
+    if (scheduleForm.feePlayer && isNaN(Number(scheduleForm.feePlayer))) {
+      errors.feePlayer = "Player fee must be a number";
+    }
+    if (scheduleForm.feeGk && isNaN(Number(scheduleForm.feeGk))) {
+      errors.feeGk = "Goalkeeper fee must be a number";
+    }
+    if (scheduleForm.totalSlots && isNaN(Number(scheduleForm.totalSlots))) {
+      errors.totalSlots = "Total slots must be a number";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleScheduleInputChange = (field: string, value: string) => {
@@ -76,6 +210,11 @@ export default function ScheduleTab({
       ...prev,
       [field]: value,
     }));
+    
+    // Clear error when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleFacilityChange = (facility: string, checked: boolean) => {
@@ -88,33 +227,44 @@ export default function ScheduleTab({
     }));
   };
 
-  const handleSaveSchedule = () => {
-    // Validation
-    if (
-      !scheduleForm.date ||
-      !scheduleForm.time ||
-      !scheduleForm.venue ||
-      !scheduleForm.fee ||
-      !scheduleForm.type
-    ) {
-      showError("Error", "Please fill all required fields");
+  const handleSaveSchedule = async () => {
+    if (!validateForm()) {
       return;
     }
 
-    // Here you would typically send the data to your API
-    console.log("Saving schedule:", scheduleForm);
+    setIsSubmitting(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (editingSchedule) {
+        showSuccess("Schedule updated successfully!");
+      } else {
+        showSuccess("Schedule created successfully!");
+      }
+      
+      setShowScheduleDialog(false);
+      resetForm();
+      fetchScheduleOverview();
+    } catch (error) {
+      showError("Error", "Failed to save schedule");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    showSuccess("Schedule created successfully!");
-    setShowScheduleDialog(false);
-
-    // Reset form
+  const resetForm = () => {
     setScheduleForm({
+      name: "",
       date: "",
       time: "",
       venue: "",
-      slots: "16",
-      fee: "",
-      type: "",
+      totalSlots: "16",
+      feePlayer: "",
+      feeGk: "",
+      typeEvent: "",
+      typeMatch: "",
+      description: "",
       facilities: {
         "Air Mineral": true,
         Rompi: true,
@@ -123,269 +273,750 @@ export default function ScheduleTab({
         Wasit: false,
       },
     });
+    setFormErrors({});
+    setEditingSchedule(null);
   };
 
-  const handleEditSchedule = (name: string) => {
-    // Find the schedule to edit
-    const scheduleData = schedules.find((s) => s.name === name);
-    if (scheduleData) {
-      console.log("Editing schedule:", name);
-      showSuccess(`Editing schedule for ${name}`);
-      // Here you would open an edit dialog or navigate to edit page
-    }
+  const handleEditSchedule = (schedule: ScheduleOverview) => {
+    setEditingSchedule(schedule);
+    setScheduleForm({
+      name: schedule.name,
+      date: schedule.date,
+      time: schedule.time,
+      venue: schedule.venue,
+      totalSlots: schedule.totalSlots.toString(),
+      feePlayer: schedule.feePlayer.toString(),
+      feeGk: schedule.feeGk.toString(),
+      typeEvent: "Open", // Default values since not in ScheduleOverview
+      typeMatch: "Futsal",
+      description: "",
+      facilities: {
+        "Air Mineral": true,
+        Rompi: true,
+        Bola: true,
+        Shower: false,
+        Wasit: false,
+      },
+    });
+    setShowScheduleDialog(true);
   };
 
-  const handleDeleteSchedule = (name: string) => {
-    // Show confirmation dialog
-    if (window.confirm("Are you sure you want to delete this schedule?")) {
-      console.log("Deleting schedule:", name);
+  const handleDeleteSchedule = async () => {
+    if (!scheduleToDelete) return;
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       showSuccess("Schedule deleted successfully!");
-      // Here you would typically call an API to delete the schedule
+      setShowDeleteConfirm(false);
+      setScheduleToDelete(null);
+      fetchScheduleOverview();
+    } catch (error) {
+      showError("Error", "Failed to delete schedule");
     }
   };
+
+  const handleBulkDelete = async () => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      showSuccess(`${selectedSchedules.length} schedules deleted successfully!`);
+      setShowBulkDeleteConfirm(false);
+      setSelectedSchedules([]);
+      fetchScheduleOverview();
+    } catch (error) {
+      showError("Error", "Failed to delete schedules");
+    }
+  };
+
+  const handleSelectSchedule = (scheduleName: string) => {
+    setSelectedSchedules(prev => 
+      prev.includes(scheduleName)
+        ? prev.filter(name => name !== scheduleName)
+        : [...prev, scheduleName]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedSchedules.length === filteredSchedules.length) {
+      setSelectedSchedules([]);
+    } else {
+      setSelectedSchedules(filteredSchedules.map(s => s.name));
+    }
+  };
+
+  // Get unique venues for filter
+  const uniqueVenues = [...new Set(schedules.map(s => s.venue))];
+
+  // Pagination
+  const totalPages = Math.ceil(filteredSchedules.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedSchedules = filteredSchedules.slice(startIndex, startIndex + itemsPerPage);
+
+  // Stats calculation
+  const stats = {
+    total: schedules.length,
+    active: schedules.filter(s => s.status === 'active').length,
+    completed: schedules.filter(s => s.status === 'completed').length,
+    totalRevenue: schedules.reduce((sum, s) => sum + s.revenue, 0)
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        <StatsSkeleton />
+
+        {/* Filters Skeleton */}
+        <Card className="animate-pulse">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 h-10 bg-gray-200 rounded"></div>
+              <div className="flex gap-4">
+                <div className="w-32 h-10 bg-gray-200 rounded"></div>
+                <div className="w-32 h-10 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <TableSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Management Jadwal</h2>
-        <Button
-          variant="black"
-          size="sm"
-          onClick={() => setShowScheduleDialog(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Jadwal
-        </Button>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Schedule Management</h2>
+          <p className="text-gray-600 mt-1">Manage football match schedules and bookings</p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          {selectedSchedules.length > 0 && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="flex items-center"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete ({selectedSchedules.length})
+            </Button>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowScheduleDialog(true)}
+            className="flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Schedule
+          </Button>
+        </div>
       </div>
 
-      {/* Add Schedule Dialog */}
-      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Tambah Jadwal Baru</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <label
-                  htmlFor="date"
-                  className="block text-sm font-medium mb-1"
+                <p className="text-sm font-medium text-gray-600">Total Schedules</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Calendar className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Schedules</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.active}</p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Clock className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  Rp {(stats.totalRevenue / 1000000).toFixed(1)}M
+                </p>
+              </div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <DollarSign className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search schedules..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+
+              <select
+                value={venueFilter}
+                onChange={(e) => setVenueFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Venues</option>
+                {uniqueVenues.map(venue => (
+                  <option key={venue} value={venue}>{venue}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Active Filters */}
+          {(searchTerm || statusFilter !== "all" || venueFilter !== "all") && (
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mr-2">Active filters:</p>
+              {searchTerm && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  Search: {searchTerm}
+                  <button onClick={() => setSearchTerm("")} className="ml-1 hover:text-blue-600">
+                    ×
+                  </button>
+                </span>
+              )}
+              {statusFilter !== "all" && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  Status: {statusFilter}
+                  <button onClick={() => setStatusFilter("all")} className="ml-1 hover:text-blue-600">
+                    ×
+                  </button>
+                </span>
+              )}
+              {venueFilter !== "all" && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  Venue: {venueFilter}
+                  <button onClick={() => setVenueFilter("all")} className="ml-1 hover:text-blue-600">
+                    ×
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Results Info */}
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-600">
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of {filteredSchedules.length} schedules
+        </p>
+        
+        {filteredSchedules.length > 0 && (
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={selectedSchedules.length === filteredSchedules.length}
+              onChange={handleSelectAll}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-600">Select all</span>
+          </div>
+        )}
+      </div>
+
+      {/* Schedules Table */}
+      <Card>
+        <CardContent className="p-0">
+          {filteredSchedules.length === 0 ? (
+            <div className="text-center py-12">
+              <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No schedules found</h3>
+              <p className="text-gray-600 mb-6">
+                {searchTerm || statusFilter !== "all" || venueFilter !== "all"
+                  ? "Try adjusting your search criteria"
+                  : "Get started by creating your first schedule"
+                }
+              </p>
+              {!searchTerm && statusFilter === "all" && venueFilter === "all" && (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowScheduleDialog(true)}
+                  className="flex items-center mx-auto"
                 >
-                  Tanggal
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add First Schedule
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedSchedules.length === paginatedSchedules.length && paginatedSchedules.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </TableHead>
+                  <TableHead>Schedule</TableHead>
+                  <TableHead>Venue</TableHead>
+                  <TableHead>Booking</TableHead>
+                  <TableHead>Revenue</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedSchedules.map((schedule) => (
+                  <TableRow key={schedule.name} className="hover:bg-gray-50">
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedSchedules.includes(schedule.name)}
+                        onChange={() => handleSelectSchedule(schedule.name)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{schedule.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {formatDate(schedule.date)} • {schedule.time} WIB
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <MapPin className="w-4 h-4 text-gray-400 mr-1" />
+                        <span className="text-sm">{schedule.venue}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm font-medium">
+                          {schedule.bookedSlots}/{schedule.totalSlots}
+                        </div>
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${(schedule.bookedSlots / schedule.totalSlots) * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {Math.round((schedule.bookedSlots / schedule.totalSlots) * 100)}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium text-green-600">
+                        Rp {schedule.revenue.toLocaleString("id-ID")}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={schedule.status === "active" ? "default" : "secondary"}
+                        className={
+                          schedule.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }
+                      >
+                        {schedule.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {/* View details */}}
+                          className="hover:bg-blue-50"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditSchedule(schedule)}
+                          className="hover:bg-yellow-50"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setScheduleToDelete(schedule);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="hover:bg-red-50 text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
+
+      {/* Add/Edit Schedule Dialog */}
+      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingSchedule ? "Edit Schedule" : "Add New Schedule"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Schedule Name *
+                </label>
+                <Input
+                  type="text"
+                  value={scheduleForm.name}
+                  onChange={(e) => handleScheduleInputChange("name", e.target.value)}
+                  placeholder="Enter schedule name"
+                  className={formErrors.name ? "border-red-500" : ""}
+                />
+                {formErrors.name && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Description
+                </label>
+                <Input
+                  type="text"
+                  value={scheduleForm.description}
+                  onChange={(e) => handleScheduleInputChange("description", e.target.value)}
+                  placeholder="Enter description (optional)"
+                />
+              </div>
+            </div>
+
+            {/* Date and Time */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Date *
                 </label>
                 <Input
                   type="date"
                   value={scheduleForm.date}
-                  onChange={(e) =>
-                    handleScheduleInputChange("date", e.target.value)
-                  }
+                  onChange={(e) => handleScheduleInputChange("date", e.target.value)}
+                  className={formErrors.date ? "border-red-500" : ""}
                 />
+                {formErrors.date && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.date}</p>
+                )}
               </div>
               <div>
-                <label
-                  htmlFor="time"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Waktu
+                <label className="block text-sm font-medium mb-2">
+                  Time *
                 </label>
                 <Input
                   type="time"
                   value={scheduleForm.time}
-                  onChange={(e) =>
-                    handleScheduleInputChange("time", e.target.value)
-                  }
+                  onChange={(e) => handleScheduleInputChange("time", e.target.value)}
+                  className={formErrors.time ? "border-red-500" : ""}
                 />
+                {formErrors.time && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.time}</p>
+                )}
               </div>
             </div>
-            <div>
-              <label htmlFor="venue" className="block text-sm font-medium mb-1">
-                Venue
-              </label>
-              <select
-                id="venue"
-                value={scheduleForm.venue}
-                onChange={(e) =>
-                  handleScheduleInputChange("venue", e.target.value)
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Pilih venue</option>
-                <option value="central">Lapangan Futsal Central</option>
-                <option value="senayan">GOR Senayan Mini Soccer</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            {/* Venue and Slots */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label
-                  htmlFor="slots"
-                  className="block text-sm font-medium mb-1"
+                <label className="block text-sm font-medium mb-2">
+                  Venue *
+                </label>
+                <select
+                  value={scheduleForm.venue}
+                  onChange={(e) => handleScheduleInputChange("venue", e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.venue ? "border-red-500" : "border-gray-300"
+                  }`}
                 >
-                  Total Slot
+                  <option value="">Select venue</option>
+                  <option value="Lapangan Futsal Central">Lapangan Futsal Central</option>
+                  <option value="GOR Senayan Mini Soccer">GOR Senayan Mini Soccer</option>
+                  <option value="Futsal Arena Jakarta">Futsal Arena Jakarta</option>
+                </select>
+                {formErrors.venue && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.venue}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Total Slots
                 </label>
                 <Input
                   type="number"
-                  value={scheduleForm.slots}
-                  onChange={(e) =>
-                    handleScheduleInputChange("slots", e.target.value)
-                  }
+                  value={scheduleForm.totalSlots}
+                  onChange={(e) => handleScheduleInputChange("totalSlots", e.target.value)}
+                  min="8"
+                  max="22"
+                  className={formErrors.totalSlots ? "border-red-500" : ""}
                 />
+                {formErrors.totalSlots && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.totalSlots}</p>
+                )}
               </div>
+            </div>
+
+            {/* Fees */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="fee" className="block text-sm font-medium mb-1">
-                  Fee per Orang
+                <label className="block text-sm font-medium mb-2">
+                  Player Fee (Rp) *
                 </label>
                 <Input
                   type="number"
                   placeholder="75000"
-                  value={scheduleForm.fee}
-                  onChange={(e) =>
-                    handleScheduleInputChange("fee", e.target.value)
-                  }
+                  value={scheduleForm.feePlayer}
+                  onChange={(e) => handleScheduleInputChange("feePlayer", e.target.value)}
+                  className={formErrors.feePlayer ? "border-red-500" : ""}
                 />
+                {formErrors.feePlayer && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.feePlayer}</p>
+                )}
               </div>
-            </div>
-            <div>
-              <label htmlFor="type" className="block text-sm font-medium mb-1">
-                Tipe Pertandingan
-              </label>
-              <select
-                id="type"
-                value={scheduleForm.type}
-                onChange={(e) =>
-                  handleScheduleInputChange("type", e.target.value)
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Pilih tipe</option>
-                <option value="open">Open</option>
-                <option value="mix">Mix</option>
-                <option value="championship">Championship</option>
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="facilities"
-                className="block text-sm font-medium mb-1"
-              >
-                Fasilitas
-              </label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {Object.entries(scheduleForm.facilities).map(
-                  ([facility, checked]) => (
-                    <label
-                      key={facility}
-                      className="flex items-center space-x-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) =>
-                          handleFacilityChange(facility, e.target.checked)
-                        }
-                      />
-                      <span className="text-sm">{facility}</span>
-                    </label>
-                  )
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Goalkeeper Fee (Rp) *
+                </label>
+                <Input
+                  type="number"
+                  placeholder="50000"
+                  value={scheduleForm.feeGk}
+                  onChange={(e) => handleScheduleInputChange("feeGk", e.target.value)}
+                  className={formErrors.feeGk ? "border-red-500" : ""}
+                />
+                {formErrors.feeGk && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.feeGk}</p>
                 )}
               </div>
             </div>
-            <div className="flex justify-end space-x-2">
+
+            {/* Event and Match Type */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Event Type *
+                </label>
+                <select
+                  value={scheduleForm.typeEvent}
+                  onChange={(e) => handleScheduleInputChange("typeEvent", e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.typeEvent ? "border-red-500" : "border-gray-300"
+                  }`}
+                >
+                  <option value="">Select event type</option>
+                  <option value="Open">Open</option>
+                  <option value="Mix">Mix</option>
+                  <option value="Championship">Championship</option>
+                  <option value="Tournament">Tournament</option>
+                </select>
+                {formErrors.typeEvent && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.typeEvent}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Match Type *
+                </label>
+                <select
+                  value={scheduleForm.typeMatch}
+                  onChange={(e) => handleScheduleInputChange("typeMatch", e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.typeMatch ? "border-red-500" : "border-gray-300"
+                  }`}
+                >
+                  <option value="">Select match type</option>
+                  <option value="Futsal">Futsal</option>
+                  <option value="Mini Soccer">Mini Soccer</option>
+                  <option value="Football">Football</option>
+                </select>
+                {formErrors.typeMatch && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.typeMatch}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Facilities */}
+            <div>
+              <label className="block text-sm font-medium mb-3">
+                Facilities
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {Object.entries(scheduleForm.facilities).map(([facility, checked]) => (
+                  <label key={facility} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => handleFacilityChange(facility, e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium">{facility}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end space-x-3 pt-6 border-t">
               <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setShowScheduleDialog(false)}
+                variant="outline"
+                onClick={() => {
+                  setShowScheduleDialog(false);
+                  resetForm();
+                }}
+                disabled={isSubmitting}
               >
-                Batal
+                Cancel
               </Button>
-              <Button size="sm" variant="black" onClick={handleSaveSchedule}>
-                Simpan Jadwal
+              <Button
+                variant="primary"
+                onClick={handleSaveSchedule}
+                disabled={isSubmitting}
+                className="flex items-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {editingSchedule ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  editingSchedule ? "Update Schedule" : "Create Schedule"
+                )}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Schedules Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tanggal & Waktu</TableHead>
-                <TableHead>Venue</TableHead>
-                <TableHead>Booking</TableHead>
-                <TableHead>Revenue</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {schedules.map((schedule) => (
-                <TableRow key={schedule.name}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {formatDate(schedule.date)}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {schedule.time} WIB
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{schedule.venue}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <div className="text-sm">
-                        {schedule.bookedSlots}/{schedule.totalSlots}
-                      </div>
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{
-                            width: `${
-                              (schedule.bookedSlots / schedule.totalSlots) * 100
-                            }%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    Rp {schedule.revenue.toLocaleString("id-ID")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        schedule.status === "active" ? "default" : "secondary"
-                      }
-                    >
-                      {schedule.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditSchedule(schedule.name)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteSchedule(schedule.name)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setScheduleToDelete(null);
+        }}
+        onConfirm={handleDeleteSchedule}
+        title="Delete Schedule"
+        message={`Are you sure you want to delete "${scheduleToDelete?.name}"? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete Multiple Schedules"
+        message={`Are you sure you want to delete ${selectedSchedules.length} selected schedules? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete All"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

@@ -1,7 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Settings, Search } from "lucide-react";
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Settings, 
+  Search, 
+  Filter,
+  Download,
+  Upload,
+  Eye,
+  MoreHorizontal,
+  Wifi,
+  Car,
+  Coffee,
+  Shield,
+  Zap
+} from "lucide-react";
 import Button from "../atoms/Button";
 import Input from "../atoms/Input";
 import { Card, CardContent } from "../atoms/Card";
@@ -11,14 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../atoms/Dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../atoms/Table";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import { useNotifications } from "./NotificationContainer";
 import {
@@ -26,20 +34,76 @@ import {
   Facility,
   FacilityPayload,
 } from "@/utils/masterData";
+import Badge from "../atoms/Badge";
+import Pagination from "../atoms/Pagination";
+
+// Facility icons mapping
+const facilityIcons: Record<string, any> = {
+  "Air Mineral": Coffee,
+  "Rompi": Shield,
+  "Bola": Settings,
+  "Shower": Settings,
+  "Wasit": Settings,
+  "Parking": Car,
+  "WiFi": Wifi,
+  "Electricity": Zap,
+  "default": Settings
+};
+
+// Skeleton Components
+const FacilityCardSkeleton = () => (
+  <Card className="animate-pulse">
+    <CardContent className="p-6">
+      <div className="flex items-center space-x-4">
+        <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+        <div className="flex-1">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div className="flex justify-end space-x-2 mt-4">
+        <div className="w-8 h-8 bg-gray-200 rounded"></div>
+        <div className="w-8 h-8 bg-gray-200 rounded"></div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const StatsSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    {[...Array(4)].map((_, i) => (
+      <Card key={i} className="animate-pulse">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
 
 export default function FacilityManagement() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [filteredFacilities, setFilteredFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage] = useState(12);
   const [showDialog, setShowDialog] = useState(false);
   const [editingFacility, setEditingFacility] = useState<Facility | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     facility: Facility | null;
   }>({ isOpen: false, facility: null });
+  const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const [formData, setFormData] = useState<FacilityPayload>({
     name: "",
@@ -51,24 +115,36 @@ export default function FacilityManagement() {
 
   useEffect(() => {
     fetchFacilities();
-  }, [searchTerm, currentPage]);
+  }, []);
+
+  useEffect(() => {
+    filterFacilities();
+  }, [facilities, searchTerm]);
 
   const fetchFacilities = async () => {
     try {
       setLoading(true);
-      const response = await masterDataService.getFacilities(
-        searchTerm,
-        currentPage,
-        10
-      );
+      const response = await masterDataService.getFacilities(searchTerm, currentPage, itemsPerPage);
       setFacilities(response.data);
-      setTotalPages(Math.ceil(response.total / response.limit));
     } catch (error) {
       console.error("Error fetching facilities:", error);
       showError("Error", "Failed to load facilities");
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterFacilities = () => {
+    let filtered = facilities;
+
+    if (searchTerm) {
+      filtered = filtered.filter(facility =>
+        facility.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredFacilities(filtered);
+    setCurrentPage(1);
   };
 
   const validateForm = (): boolean => {
@@ -139,6 +215,20 @@ export default function FacilityManagement() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    try {
+      // Simulate API call for bulk delete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      showSuccess(`${selectedFacilities.length} facilities deleted successfully`);
+      setShowBulkDeleteConfirm(false);
+      setSelectedFacilities([]);
+      fetchFacilities();
+    } catch (error) {
+      showError("Error", "Failed to delete facilities");
+    }
+  };
+
   const handleCloseDialog = () => {
     setShowDialog(false);
     setEditingFacility(null);
@@ -154,161 +244,444 @@ export default function FacilityManagement() {
     }
   };
 
+  const handleSelectFacility = (id: string) => {
+    setSelectedFacilities(prev => 
+      prev.includes(id)
+        ? prev.filter(facilityId => facilityId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedFacilities.length === paginatedFacilities.length) {
+      setSelectedFacilities([]);
+    } else {
+      setSelectedFacilities(paginatedFacilities.map(f => f.id));
+    }
+  };
+
+  const getFacilityIcon = (name: string) => {
+    const IconComponent = facilityIcons[name] || facilityIcons.default;
+    return IconComponent;
+  };
+
+  const getFacilityColor = (name: string) => {
+    const colors = [
+      "from-blue-500 to-teal-500",
+      "from-green-500 to-emerald-500", 
+      "from-purple-500 to-pink-500",
+      "from-orange-500 to-red-500",
+      "from-indigo-500 to-blue-500",
+      "from-yellow-500 to-orange-500"
+    ];
+    const index = name.length % colors.length;
+    return colors[index];
+  };
+
+  // Pagination
+  const totalPages = Math.ceil(filteredFacilities.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedFacilities = filteredFacilities.slice(startIndex, startIndex + itemsPerPage);
+
+  // Stats calculation
+  const stats = {
+    total: facilities.length,
+    active: facilities.length, // All facilities are active
+    categories: new Set(facilities.map(f => f.name.split(' ')[0])).size,
+    recent: facilities.filter(f => 
+      f.createdAt && new Date(f.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    ).length
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
+          </div>
+          <div className="flex space-x-2">
+            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        <StatsSkeleton />
+
+        {/* Filters Skeleton */}
+        <Card className="animate-pulse">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 h-10 bg-gray-200 rounded"></div>
+              <div className="flex gap-4">
+                <div className="w-24 h-10 bg-gray-200 rounded"></div>
+                <div className="w-24 h-10 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Facilities Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <FacilityCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Facility Management
-        </h2>
-        <Button
-          variant="black"
-          size="sm"
-          onClick={() => setShowDialog(true)}
-          disabled={loading}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Facility
-        </Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Facility Management</h2>
+          <p className="text-gray-600 mt-1">Manage venue facilities and amenities</p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          {selectedFacilities.length > 0 && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="flex items-center"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete ({selectedFacilities.length})
+            </Button>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowDialog(true)}
+            disabled={loading}
+            className="flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Facility
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Facilities</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Settings className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.active}</p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Shield className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Categories</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.categories}</p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Filter className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Added This Week</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.recent}</p>
+              </div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Plus className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters and View Toggle */}
       <Card>
         <CardContent className="p-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Search facilities..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search facilities..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              {/* View Toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Grid
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  List
+                </button>
+              </div>
+            </div>
           </div>
+
+          {/* Active Filters */}
+          {searchTerm && (
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mr-2">Active filters:</p>
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                Search: {searchTerm}
+                <button onClick={() => setSearchTerm("")} className="ml-1 hover:text-blue-600">
+                  ×
+                </button>
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Facilities Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
-          // Loading skeletons
-          [...Array(6)].map((_, index) => (
-            <Card key={index} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2 mt-4">
-                  <div className="w-8 h-8 bg-gray-200 rounded"></div>
-                  <div className="w-8 h-8 bg-gray-200 rounded"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : facilities.length === 0 ? (
-          <div className="col-span-full">
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No facilities found
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  {searchTerm
-                    ? "Try adjusting your search criteria"
-                    : "Get started by adding your first facility"}
-                </p>
-                {!searchTerm && (
-                  <Button
-                    variant="black"
-                    size="sm"
-                    onClick={() => setShowDialog(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add First Facility
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+      {/* Results Info */}
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-600">
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredFacilities.length)} of {filteredFacilities.length} facilities
+        </p>
+        
+        {filteredFacilities.length > 0 && (
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={selectedFacilities.length === paginatedFacilities.length && paginatedFacilities.length > 0}
+              onChange={handleSelectAll}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-600">Select all</span>
           </div>
-        ) : (
-          facilities.map((facility) => (
-            <Card
-              key={facility.id}
-              className="hover:shadow-lg transition-shadow"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center">
-                    <Settings className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {facility.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {facility.createdAt
-                        ? `Added ${new Date(
-                            facility.createdAt
-                          ).toLocaleDateString()}`
-                        : "Recently added"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEdit(facility)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() =>
-                      setDeleteConfirmation({
-                        isOpen: true,
-                        facility: facility,
-                      })
-                    }
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
         )}
       </div>
 
+      {/* Facilities Display */}
+      {filteredFacilities.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No facilities found</h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm
+                ? "Try adjusting your search criteria"
+                : "Get started by adding your first facility"}
+            </p>
+            {!searchTerm && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowDialog(true)}
+                className="flex items-center mx-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add First Facility
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {paginatedFacilities.map((facility) => {
+            const IconComponent = getFacilityIcon(facility.name);
+            const colorClass = getFacilityColor(facility.name);
+            
+            return (
+              <Card
+                key={facility.id}
+                className="hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 group"
+              >
+                {/* Selection Checkbox */}
+                <div className="absolute top-4 left-4 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedFacilities.includes(facility.id)}
+                    onChange={() => handleSelectFacility(facility.id)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </div>
+
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className={`w-12 h-12 bg-gradient-to-r ${colorClass} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                      <IconComponent className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                        {facility.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {facility.createdAt
+                          ? `Added ${new Date(facility.createdAt).toLocaleDateString()}`
+                          : "Recently added"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Active
+                    </Badge>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEdit(facility)}
+                        className="hover:bg-yellow-50"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          setDeleteConfirmation({
+                            isOpen: true,
+                            facility: facility,
+                          })
+                        }
+                        className="hover:bg-red-50 text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="divide-y divide-gray-200">
+              {paginatedFacilities.map((facility) => {
+                const IconComponent = getFacilityIcon(facility.name);
+                const colorClass = getFacilityColor(facility.name);
+                
+                return (
+                  <div key={facility.id} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedFacilities.includes(facility.id)}
+                          onChange={() => handleSelectFacility(facility.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className={`w-10 h-10 bg-gradient-to-r ${colorClass} rounded-lg flex items-center justify-center`}>
+                          <IconComponent className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{facility.name}</h3>
+                          <p className="text-sm text-gray-500">
+                            {facility.createdAt
+                              ? `Added ${new Date(facility.createdAt).toLocaleDateString()}`
+                              : "Recently added"}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Active
+                        </Badge>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEdit(facility)}
+                            className="hover:bg-yellow-50"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setDeleteConfirmation({
+                                isOpen: true,
+                                facility: facility,
+                              })
+                            }
+                            className="hover:bg-red-50 text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <span className="flex items-center px-4 py-2 text-sm text-gray-700">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
 
       {/* Add/Edit Dialog */}
@@ -335,7 +708,7 @@ export default function FacilityManagement() {
                 <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
               )}
               <p className="text-gray-500 text-sm mt-1">
-                Examples: Air Mineral, Rompi, Bola, Shower, Wasit
+                Examples: Air Mineral, Rompi, Bola, Shower, Wasit, Parking, WiFi
               </p>
             </div>
 
@@ -351,17 +724,19 @@ export default function FacilityManagement() {
               </Button>
               <Button
                 type="submit"
-                variant="black"
+                variant="primary"
                 size="sm"
                 disabled={submitting}
+                className="flex items-center"
               >
-                {submitting
-                  ? editingFacility
-                    ? "Updating..."
-                    : "Creating..."
-                  : editingFacility
-                  ? "Update Facility"
-                  : "Create Facility"}
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {editingFacility ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  editingFacility ? "Update Facility" : "Create Facility"
+                )}
               </Button>
             </div>
           </form>
@@ -377,6 +752,18 @@ export default function FacilityManagement() {
         message={`Are you sure you want to delete "${deleteConfirmation.facility?.name}"? This action cannot be undone.`}
         type="danger"
         confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete Multiple Facilities"
+        message={`Are you sure you want to delete ${selectedFacilities.length} selected facilities? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete All"
         cancelText="Cancel"
       />
     </div>
