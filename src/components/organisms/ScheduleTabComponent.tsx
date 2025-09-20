@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
   Calendar,
   Clock,
   MapPin,
@@ -15,7 +15,7 @@ import {
   Eye,
   MoreHorizontal,
   Download,
-  Upload
+  Upload,
 } from "lucide-react";
 import Button from "@/components/atoms/Button";
 import { Card, CardContent } from "@/components/atoms/Card";
@@ -39,6 +39,7 @@ import { ScheduleOverview } from "@/types/schedule";
 import { useNotifications } from "./NotificationContainer";
 import { scheduleService } from "@/utils/schedule";
 import { adminService } from "@/utils/admin";
+import { masterDataService } from "@/utils/masterData";
 import { formatDate } from "@/lib/helper";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import Pagination from "../atoms/Pagination";
@@ -48,11 +49,29 @@ interface ScheduleTabProps {
   showSuccess: (message: string) => void;
 }
 
+// Type definitions for venue and facility
+interface Venue {
+  id: string;
+  name: string;
+  address?: string;
+  // Add other venue properties as needed
+}
+
+interface Facility {
+  id: string;
+  name: string;
+  description?: string;
+  // Add other facility properties as needed
+}
+
 // Skeleton Components
 const TableSkeleton = () => (
   <div className="space-y-4">
     {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
+      <div
+        key={i}
+        className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse"
+      >
         <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
         <div className="flex-1 space-y-2">
           <div className="h-4 bg-gray-200 rounded w-1/4"></div>
@@ -76,7 +95,7 @@ const StatsSkeleton = () => (
     {[...Array(4)].map((_, i) => (
       <Card key={i} className="animate-pulse">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="pt-4 flex items-center justify-between">
             <div className="space-y-2">
               <div className="h-4 bg-gray-200 rounded w-20"></div>
               <div className="h-8 bg-gray-200 rounded w-16"></div>
@@ -95,10 +114,13 @@ export default function ScheduleTab({
 }: ScheduleTabProps) {
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [schedules, setSchedules] = useState<ScheduleOverview[]>([]);
-  const [filteredSchedules, setFilteredSchedules] = useState<ScheduleOverview[]>([]);
+  const [filteredSchedules, setFilteredSchedules] = useState<
+    ScheduleOverview[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<ScheduleOverview | null>(null);
+  const [editingSchedule, setEditingSchedule] =
+    useState<ScheduleOverview | null>(null);
   const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -106,34 +128,37 @@ export default function ScheduleTab({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [scheduleToDelete, setScheduleToDelete] = useState<ScheduleOverview | null>(null);
+  const [scheduleToDelete, setScheduleToDelete] =
+    useState<ScheduleOverview | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  // New states for venues and facilities
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [isLoadingVenues, setIsLoadingVenues] = useState(false);
+  const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
 
   // Form states for new/edit schedule
   const [scheduleForm, setScheduleForm] = useState({
     name: "",
     date: "",
     time: "",
-    venue: "",
+    venueId: "", // Changed from venue to venueId
     totalSlots: "16",
     feePlayer: "",
     feeGk: "",
     typeEvent: "",
     typeMatch: "",
     description: "",
-    facilities: {
-      "Air Mineral": true,
-      Rompi: true,
-      Bola: true,
-      Shower: false,
-      Wasit: false,
-    },
+    facilityIds: [] as string[], // Changed from facilities object to facilityIds array
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchScheduleOverview();
+    fetchVenues();
+    fetchFacilities();
   }, []);
 
   useEffect(() => {
@@ -153,25 +178,54 @@ export default function ScheduleTab({
     }
   };
 
+  const fetchVenues = async () => {
+    try {
+      setIsLoadingVenues(true);
+      const response = await masterDataService.getVenues("");
+      setVenues(response);
+    } catch (error) {
+      console.error("Error fetching venues:", error);
+      showError("Error", "Failed to load venues");
+    } finally {
+      setIsLoadingVenues(false);
+    }
+  };
+
+  const fetchFacilities = async () => {
+    try {
+      setIsLoadingFacilities(true);
+      const response = await masterDataService.getFacilities("", 1, 100);
+      setFacilities(response.data);
+    } catch (error) {
+      console.error("Error fetching facilities:", error);
+      showError("Error", "Failed to load facilities");
+    } finally {
+      setIsLoadingFacilities(false);
+    }
+  };
+
   const filterSchedules = () => {
     let filtered = schedules;
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(schedule =>
-        schedule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        schedule.venue.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (schedule) =>
+          schedule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          schedule.venue.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(schedule => schedule.status === statusFilter);
+      filtered = filtered.filter(
+        (schedule) => schedule.status === statusFilter
+      );
     }
 
     // Venue filter
     if (venueFilter !== "all") {
-      filtered = filtered.filter(schedule => schedule.venue === venueFilter);
+      filtered = filtered.filter((schedule) => schedule.venue === venueFilter);
     }
 
     setFilteredSchedules(filtered);
@@ -184,7 +238,7 @@ export default function ScheduleTab({
     if (!scheduleForm.name.trim()) errors.name = "Schedule name is required";
     if (!scheduleForm.date) errors.date = "Date is required";
     if (!scheduleForm.time) errors.time = "Time is required";
-    if (!scheduleForm.venue) errors.venue = "Venue is required";
+    if (!scheduleForm.venueId) errors.venueId = "Venue is required";
     if (!scheduleForm.feePlayer) errors.feePlayer = "Player fee is required";
     if (!scheduleForm.feeGk) errors.feeGk = "Goalkeeper fee is required";
     if (!scheduleForm.typeEvent) errors.typeEvent = "Event type is required";
@@ -210,20 +264,19 @@ export default function ScheduleTab({
       ...prev,
       [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field]: "" }));
+      setFormErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  const handleFacilityChange = (facility: string, checked: boolean) => {
+  const handleFacilityChange = (facilityId: string, checked: boolean) => {
     setScheduleForm((prev) => ({
       ...prev,
-      facilities: {
-        ...prev.facilities,
-        [facility]: checked,
-      },
+      facilityIds: checked
+        ? [...prev.facilityIds, facilityId]
+        : prev.facilityIds.filter((id) => id !== facilityId),
     }));
   };
 
@@ -235,14 +288,14 @@ export default function ScheduleTab({
     setIsSubmitting(true);
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       if (editingSchedule) {
         showSuccess("Schedule updated successfully!");
       } else {
         showSuccess("Schedule created successfully!");
       }
-      
+
       setShowScheduleDialog(false);
       resetForm();
       fetchScheduleOverview();
@@ -258,20 +311,14 @@ export default function ScheduleTab({
       name: "",
       date: "",
       time: "",
-      venue: "",
+      venueId: "",
       totalSlots: "16",
       feePlayer: "",
       feeGk: "",
       typeEvent: "",
       typeMatch: "",
       description: "",
-      facilities: {
-        "Air Mineral": true,
-        Rompi: true,
-        Bola: true,
-        Shower: false,
-        Wasit: false,
-      },
+      facilityIds: [],
     });
     setFormErrors({});
     setEditingSchedule(null);
@@ -279,24 +326,22 @@ export default function ScheduleTab({
 
   const handleEditSchedule = (schedule: ScheduleOverview) => {
     setEditingSchedule(schedule);
+
+    // Find venue ID by name (you might want to include venueId in ScheduleOverview type)
+    const venue = venues.find((v) => v.name === schedule.venue);
+
     setScheduleForm({
       name: schedule.name,
       date: schedule.date,
       time: schedule.time,
-      venue: schedule.venue,
+      venueId: venue?.id || "",
       totalSlots: schedule.totalSlots.toString(),
       feePlayer: schedule.feePlayer.toString(),
       feeGk: schedule.feeGk.toString(),
       typeEvent: "Open", // Default values since not in ScheduleOverview
       typeMatch: "Futsal",
       description: "",
-      facilities: {
-        "Air Mineral": true,
-        Rompi: true,
-        Bola: true,
-        Shower: false,
-        Wasit: false,
-      },
+      facilityIds: [], // You might want to include facility data in ScheduleOverview
     });
     setShowScheduleDialog(true);
   };
@@ -306,8 +351,8 @@ export default function ScheduleTab({
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       showSuccess("Schedule deleted successfully!");
       setShowDeleteConfirm(false);
       setScheduleToDelete(null);
@@ -320,9 +365,11 @@ export default function ScheduleTab({
   const handleBulkDelete = async () => {
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      showSuccess(`${selectedSchedules.length} schedules deleted successfully!`);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      showSuccess(
+        `${selectedSchedules.length} schedules deleted successfully!`
+      );
       setShowBulkDeleteConfirm(false);
       setSelectedSchedules([]);
       fetchScheduleOverview();
@@ -332,9 +379,9 @@ export default function ScheduleTab({
   };
 
   const handleSelectSchedule = (scheduleName: string) => {
-    setSelectedSchedules(prev => 
+    setSelectedSchedules((prev) =>
       prev.includes(scheduleName)
-        ? prev.filter(name => name !== scheduleName)
+        ? prev.filter((name) => name !== scheduleName)
         : [...prev, scheduleName]
     );
   };
@@ -343,24 +390,27 @@ export default function ScheduleTab({
     if (selectedSchedules.length === filteredSchedules.length) {
       setSelectedSchedules([]);
     } else {
-      setSelectedSchedules(filteredSchedules.map(s => s.name));
+      setSelectedSchedules(filteredSchedules.map((s) => s.name));
     }
   };
 
   // Get unique venues for filter
-  const uniqueVenues = [...new Set(schedules.map(s => s.venue))];
+  const uniqueVenues = [...new Set(schedules.map((s) => s.venue))];
 
   // Pagination
   const totalPages = Math.ceil(filteredSchedules.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedSchedules = filteredSchedules.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedSchedules = filteredSchedules.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   // Stats calculation
   const stats = {
     total: schedules.length,
-    active: schedules.filter(s => s.status === 'active').length,
-    completed: schedules.filter(s => s.status === 'completed').length,
-    totalRevenue: schedules.reduce((sum, s) => sum + s.revenue, 0)
+    active: schedules.filter((s) => s.status === "active").length,
+    completed: schedules.filter((s) => s.status === "completed").length,
+    totalRevenue: schedules.reduce((sum, s) => sum + s.revenue, 0),
   };
 
   if (isLoading) {
@@ -400,10 +450,14 @@ export default function ScheduleTab({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Schedule Management</h2>
-          <p className="text-gray-600 mt-1">Manage football match schedules and bookings</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Schedule Management
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Manage football match schedules and bookings
+          </p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           {selectedSchedules.length > 0 && (
             <Button
@@ -416,15 +470,6 @@ export default function ScheduleTab({
               Delete ({selectedSchedules.length})
             </Button>
           )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
 
           <Button
             variant="primary"
@@ -442,10 +487,14 @@ export default function ScheduleTab({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Schedules</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Schedules
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {stats.total}
+                </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
                 <Calendar className="w-6 h-6 text-blue-600" />
@@ -456,10 +505,14 @@ export default function ScheduleTab({
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Schedules</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.active}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Schedules
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {stats.active}
+                </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
                 <Clock className="w-6 h-6 text-green-600" />
@@ -470,10 +523,12 @@ export default function ScheduleTab({
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {stats.completed}
+                </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
                 <Users className="w-6 h-6 text-purple-600" />
@@ -484,9 +539,11 @@ export default function ScheduleTab({
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Revenue
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
                   Rp {(stats.totalRevenue / 1000000).toFixed(1)}M
                 </p>
@@ -503,8 +560,8 @@ export default function ScheduleTab({
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <div className="pt-4 flex-1 relative">
+              <Search className="absolute left-3 top-9 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
                 placeholder="Search schedules..."
@@ -513,8 +570,8 @@ export default function ScheduleTab({
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
+
+            <div className="pt-4 flex flex-col sm:flex-row gap-4">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -532,8 +589,10 @@ export default function ScheduleTab({
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Venues</option>
-                {uniqueVenues.map(venue => (
-                  <option key={venue} value={venue}>{venue}</option>
+                {uniqueVenues.map((venue) => (
+                  <option key={venue} value={venue}>
+                    {venue}
+                  </option>
                 ))}
               </select>
             </div>
@@ -546,7 +605,10 @@ export default function ScheduleTab({
               {searchTerm && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                   Search: {searchTerm}
-                  <button onClick={() => setSearchTerm("")} className="ml-1 hover:text-blue-600">
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="ml-1 hover:text-blue-600"
+                  >
                     ×
                   </button>
                 </span>
@@ -554,7 +616,10 @@ export default function ScheduleTab({
               {statusFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                   Status: {statusFilter}
-                  <button onClick={() => setStatusFilter("all")} className="ml-1 hover:text-blue-600">
+                  <button
+                    onClick={() => setStatusFilter("all")}
+                    className="ml-1 hover:text-blue-600"
+                  >
                     ×
                   </button>
                 </span>
@@ -562,7 +627,10 @@ export default function ScheduleTab({
               {venueFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                   Venue: {venueFilter}
-                  <button onClick={() => setVenueFilter("all")} className="ml-1 hover:text-blue-600">
+                  <button
+                    onClick={() => setVenueFilter("all")}
+                    className="ml-1 hover:text-blue-600"
+                  >
                     ×
                   </button>
                 </span>
@@ -575,9 +643,11 @@ export default function ScheduleTab({
       {/* Results Info */}
       <div className="flex justify-between items-center">
         <p className="text-sm text-gray-600">
-          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of {filteredSchedules.length} schedules
+          Showing {startIndex + 1}-
+          {Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of{" "}
+          {filteredSchedules.length} schedules
         </p>
-        
+
         {filteredSchedules.length > 0 && (
           <div className="flex items-center space-x-2">
             <input
@@ -597,23 +667,26 @@ export default function ScheduleTab({
           {filteredSchedules.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No schedules found</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No schedules found
+              </h3>
               <p className="text-gray-600 mb-6">
                 {searchTerm || statusFilter !== "all" || venueFilter !== "all"
                   ? "Try adjusting your search criteria"
-                  : "Get started by creating your first schedule"
-                }
+                  : "Get started by creating your first schedule"}
               </p>
-              {!searchTerm && statusFilter === "all" && venueFilter === "all" && (
-                <Button
-                  variant="primary"
-                  onClick={() => setShowScheduleDialog(true)}
-                  className="flex items-center mx-auto"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add First Schedule
-                </Button>
-              )}
+              {!searchTerm &&
+                statusFilter === "all" &&
+                venueFilter === "all" && (
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowScheduleDialog(true)}
+                    className="flex items-center mx-auto"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add First Schedule
+                  </Button>
+                )}
             </div>
           ) : (
             <Table>
@@ -622,7 +695,11 @@ export default function ScheduleTab({
                   <TableHead className="w-12">
                     <input
                       type="checkbox"
-                      checked={selectedSchedules.length === paginatedSchedules.length && paginatedSchedules.length > 0}
+                      checked={
+                        selectedSchedules.length ===
+                          paginatedSchedules.length &&
+                        paginatedSchedules.length > 0
+                      }
                       onChange={handleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -652,7 +729,9 @@ export default function ScheduleTab({
                           <Calendar className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900">{schedule.name}</div>
+                          <div className="font-medium text-gray-900">
+                            {schedule.name}
+                          </div>
                           <div className="text-sm text-gray-500">
                             {formatDate(schedule.date)} • {schedule.time} WIB
                           </div>
@@ -674,12 +753,18 @@ export default function ScheduleTab({
                           <div
                             className="bg-green-600 h-2 rounded-full transition-all duration-300"
                             style={{
-                              width: `${(schedule.bookedSlots / schedule.totalSlots) * 100}%`,
+                              width: `${
+                                (schedule.bookedSlots / schedule.totalSlots) *
+                                100
+                              }%`,
                             }}
                           />
                         </div>
                         <span className="text-xs text-gray-500">
-                          {Math.round((schedule.bookedSlots / schedule.totalSlots) * 100)}%
+                          {Math.round(
+                            (schedule.bookedSlots / schedule.totalSlots) * 100
+                          )}
+                          %
                         </span>
                       </div>
                     </TableCell>
@@ -690,7 +775,9 @@ export default function ScheduleTab({
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={schedule.status === "active" ? "default" : "secondary"}
+                        variant={
+                          schedule.status === "active" ? "default" : "secondary"
+                        }
                         className={
                           schedule.status === "active"
                             ? "bg-green-100 text-green-800"
@@ -702,14 +789,6 @@ export default function ScheduleTab({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {/* View details */}}
-                          className="hover:bg-blue-50"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -766,7 +845,9 @@ export default function ScheduleTab({
                 <Input
                   type="text"
                   value={scheduleForm.name}
-                  onChange={(e) => handleScheduleInputChange("name", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("name", e.target.value)
+                  }
                   placeholder="Enter schedule name"
                   className={formErrors.name ? "border-red-500" : ""}
                 />
@@ -782,7 +863,9 @@ export default function ScheduleTab({
                 <Input
                   type="text"
                   value={scheduleForm.description}
-                  onChange={(e) => handleScheduleInputChange("description", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("description", e.target.value)
+                  }
                   placeholder="Enter description (optional)"
                 />
               </div>
@@ -791,13 +874,13 @@ export default function ScheduleTab({
             {/* Date and Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Date *
-                </label>
+                <label className="block text-sm font-medium mb-2">Date *</label>
                 <Input
                   type="date"
                   value={scheduleForm.date}
-                  onChange={(e) => handleScheduleInputChange("date", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("date", e.target.value)
+                  }
                   className={formErrors.date ? "border-red-500" : ""}
                 />
                 {formErrors.date && (
@@ -805,13 +888,13 @@ export default function ScheduleTab({
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Time *
-                </label>
+                <label className="block text-sm font-medium mb-2">Time *</label>
                 <Input
                   type="time"
                   value={scheduleForm.time}
-                  onChange={(e) => handleScheduleInputChange("time", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("time", e.target.value)
+                  }
                   className={formErrors.time ? "border-red-500" : ""}
                 />
                 {formErrors.time && (
@@ -827,19 +910,28 @@ export default function ScheduleTab({
                   Venue *
                 </label>
                 <select
-                  value={scheduleForm.venue}
-                  onChange={(e) => handleScheduleInputChange("venue", e.target.value)}
+                  value={scheduleForm.venueId}
+                  onChange={(e) =>
+                    handleScheduleInputChange("venueId", e.target.value)
+                  }
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.venue ? "border-red-500" : "border-gray-300"
+                    formErrors.venueId ? "border-red-500" : "border-gray-300"
                   }`}
+                  disabled={isLoadingVenues}
                 >
-                  <option value="">Select venue</option>
-                  <option value="Lapangan Futsal Central">Lapangan Futsal Central</option>
-                  <option value="GOR Senayan Mini Soccer">GOR Senayan Mini Soccer</option>
-                  <option value="Futsal Arena Jakarta">Futsal Arena Jakarta</option>
+                  <option value="">
+                    {isLoadingVenues ? "Loading venues..." : "Select venue"}
+                  </option>
+                  {venues.map((venue) => (
+                    <option key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </option>
+                  ))}
                 </select>
-                {formErrors.venue && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.venue}</p>
+                {formErrors.venueId && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.venueId}
+                  </p>
                 )}
               </div>
               <div>
@@ -849,13 +941,17 @@ export default function ScheduleTab({
                 <Input
                   type="number"
                   value={scheduleForm.totalSlots}
-                  onChange={(e) => handleScheduleInputChange("totalSlots", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("totalSlots", e.target.value)
+                  }
                   min="8"
                   max="22"
                   className={formErrors.totalSlots ? "border-red-500" : ""}
                 />
                 {formErrors.totalSlots && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.totalSlots}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.totalSlots}
+                  </p>
                 )}
               </div>
             </div>
@@ -870,11 +966,15 @@ export default function ScheduleTab({
                   type="number"
                   placeholder="75000"
                   value={scheduleForm.feePlayer}
-                  onChange={(e) => handleScheduleInputChange("feePlayer", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("feePlayer", e.target.value)
+                  }
                   className={formErrors.feePlayer ? "border-red-500" : ""}
                 />
                 {formErrors.feePlayer && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.feePlayer}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.feePlayer}
+                  </p>
                 )}
               </div>
               <div>
@@ -885,11 +985,15 @@ export default function ScheduleTab({
                   type="number"
                   placeholder="50000"
                   value={scheduleForm.feeGk}
-                  onChange={(e) => handleScheduleInputChange("feeGk", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("feeGk", e.target.value)
+                  }
                   className={formErrors.feeGk ? "border-red-500" : ""}
                 />
                 {formErrors.feeGk && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.feeGk}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.feeGk}
+                  </p>
                 )}
               </div>
             </div>
@@ -902,7 +1006,9 @@ export default function ScheduleTab({
                 </label>
                 <select
                   value={scheduleForm.typeEvent}
-                  onChange={(e) => handleScheduleInputChange("typeEvent", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("typeEvent", e.target.value)
+                  }
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     formErrors.typeEvent ? "border-red-500" : "border-gray-300"
                   }`}
@@ -914,7 +1020,9 @@ export default function ScheduleTab({
                   <option value="Tournament">Tournament</option>
                 </select>
                 {formErrors.typeEvent && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.typeEvent}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.typeEvent}
+                  </p>
                 )}
               </div>
               <div>
@@ -923,7 +1031,9 @@ export default function ScheduleTab({
                 </label>
                 <select
                   value={scheduleForm.typeMatch}
-                  onChange={(e) => handleScheduleInputChange("typeMatch", e.target.value)}
+                  onChange={(e) =>
+                    handleScheduleInputChange("typeMatch", e.target.value)
+                  }
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     formErrors.typeMatch ? "border-red-500" : "border-gray-300"
                   }`}
@@ -934,7 +1044,9 @@ export default function ScheduleTab({
                   <option value="Football">Football</option>
                 </select>
                 {formErrors.typeMatch && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.typeMatch}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.typeMatch}
+                  </p>
                 )}
               </div>
             </div>
@@ -944,25 +1056,60 @@ export default function ScheduleTab({
               <label className="block text-sm font-medium mb-3">
                 Facilities
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {Object.entries(scheduleForm.facilities).map(([facility, checked]) => (
-                  <label key={facility} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => handleFacilityChange(facility, e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium">{facility}</span>
-                  </label>
-                ))}
-              </div>
+              {isLoadingFacilities ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="p-3 border rounded-lg animate-pulse"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {facilities.map((facility) => (
+                    <label
+                      key={facility.id}
+                      className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={scheduleForm.facilityIds.includes(facility.id)}
+                        onChange={(e) =>
+                          handleFacilityChange(facility.id, e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium">
+                        {facility.name}
+                      </span>
+                      {facility.description && (
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({facility.description})
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {facilities.length === 0 && !isLoadingFacilities && (
+                <p className="text-gray-500 text-sm">
+                  No facilities available. Please add facilities in Master Data
+                  first.
+                </p>
+              )}
             </div>
 
             {/* Actions */}
             <div className="flex justify-end space-x-3 pt-6 border-t">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => {
                   setShowScheduleDialog(false);
                   resetForm();
@@ -973,8 +1120,11 @@ export default function ScheduleTab({
               </Button>
               <Button
                 variant="primary"
+                size="sm"
                 onClick={handleSaveSchedule}
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting || isLoadingVenues || isLoadingFacilities
+                }
                 className="flex items-center"
               >
                 {isSubmitting ? (
@@ -982,8 +1132,10 @@ export default function ScheduleTab({
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     {editingSchedule ? "Updating..." : "Creating..."}
                   </>
+                ) : editingSchedule ? (
+                  "Update Schedule"
                 ) : (
-                  editingSchedule ? "Update Schedule" : "Create Schedule"
+                  "Create Schedule"
                 )}
               </Button>
             </div>

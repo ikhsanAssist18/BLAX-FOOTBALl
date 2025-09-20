@@ -7,6 +7,8 @@ interface InputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
   icon?: React.ReactNode;
+  min?: string;
+  max?: string;
 }
 
 export default function Input({
@@ -16,6 +18,8 @@ export default function Input({
   onChange,
   className = "",
   icon,
+  min,
+  max,
 }: InputProps) {
   return (
     <div className="relative">
@@ -27,6 +31,8 @@ export default function Input({
       <input
         type={type}
         placeholder={placeholder}
+        min={min}
+        max={max}
         value={value}
         onChange={onChange}
         className={`w-full ${

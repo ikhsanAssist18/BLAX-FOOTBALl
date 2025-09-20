@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { 
-  Clock, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Filter, 
-  Eye, 
+import {
+  Clock,
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  Eye,
   Calendar,
   Tag,
   Image as ImageIcon,
   FileText,
   Download,
   Upload,
-  MoreHorizontal
+  MoreHorizontal,
 } from "lucide-react";
 import Button from "../atoms/Button";
 import {
@@ -67,7 +67,7 @@ const StatsSkeleton = () => (
     {[...Array(4)].map((_, i) => (
       <Card key={i} className="animate-pulse">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="pt-4 flex items-center justify-between">
             <div className="space-y-2">
               <div className="h-4 bg-gray-200 rounded w-20"></div>
               <div className="h-8 bg-gray-200 rounded w-16"></div>
@@ -75,7 +75,7 @@ const StatsSkeleton = () => (
             <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
           </div>
         </CardContent>
-      </div>
+      </Card>
     ))}
   </div>
 );
@@ -134,16 +134,17 @@ export default function NewsTab() {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Category filter
     if (categoryFilter !== "all") {
-      filtered = filtered.filter(item => item.category === categoryFilter);
+      filtered = filtered.filter((item) => item.category === categoryFilter);
     }
 
     setFilteredNews(filtered);
@@ -157,7 +158,8 @@ export default function NewsTab() {
     if (!excerpt.trim()) errors.excerpt = "Excerpt is required";
     if (!content.trim()) errors.content = "Content is required";
     if (!imageUrl.trim()) errors.imageUrl = "Image URL is required";
-    else if (!isValidUrl(imageUrl)) errors.imageUrl = "Please enter a valid URL";
+    else if (!isValidUrl(imageUrl))
+      errors.imageUrl = "Please enter a valid URL";
     if (!category.trim()) errors.category = "Category is required";
 
     setFormErrors(errors);
@@ -265,8 +267,8 @@ export default function NewsTab() {
   const handleBulkDelete = async () => {
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       showSuccess(`${selectedNews.length} berita berhasil dihapus`);
       setShowBulkDeleteConfirm(false);
       setSelectedNews([]);
@@ -282,10 +284,8 @@ export default function NewsTab() {
   };
 
   const handleSelectNews = (id: string) => {
-    setSelectedNews(prev => 
-      prev.includes(id)
-        ? prev.filter(newsId => newsId !== id)
-        : [...prev, id]
+    setSelectedNews((prev) =>
+      prev.includes(id) ? prev.filter((newsId) => newsId !== id) : [...prev, id]
     );
   };
 
@@ -293,41 +293,55 @@ export default function NewsTab() {
     if (selectedNews.length === paginatedNews.length) {
       setSelectedNews([]);
     } else {
-      setSelectedNews(paginatedNews.map(n => n.id));
+      setSelectedNews(paginatedNews.map((n) => n.id));
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
     switch (field) {
-      case "title": setTitle(value); break;
-      case "excerpt": setExcerpt(value); break;
-      case "content": setContent(value); break;
-      case "imageUrl": setImageUrl(value); break;
-      case "category": setCategory(value); break;
+      case "title":
+        setTitle(value);
+        break;
+      case "excerpt":
+        setExcerpt(value);
+        break;
+      case "content":
+        setContent(value);
+        break;
+      case "imageUrl":
+        setImageUrl(value);
+        break;
+      case "category":
+        setCategory(value);
+        break;
     }
-    
+
     // Clear error when user starts typing
     if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field]: "" }));
+      setFormErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   // Get unique categories for filter
-  const uniqueCategories = [...new Set(news.map(n => n.category))];
+  const uniqueCategories = [...new Set(news.map((n) => n.category))];
 
   // Pagination
   const totalPages = Math.ceil(filteredNews.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedNews = filteredNews.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedNews = filteredNews.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   // Stats calculation
   const stats = {
     total: news.length,
     published: news.length, // All news are published
     categories: uniqueCategories.length,
-    thisMonth: news.filter(n => 
-      new Date(n.publishAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    ).length
+    thisMonth: news.filter(
+      (n) =>
+        new Date(n.publishAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    ).length,
   };
 
   if (isLoading) {
@@ -370,10 +384,14 @@ export default function NewsTab() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">News Management</h2>
-            <p className="text-gray-600 mt-1">Create and manage news articles</p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              News Management
+            </h2>
+            <p className="text-gray-600 mt-1">
+              Create and manage news articles
+            </p>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             {selectedNews.length > 0 && (
               <Button
@@ -386,15 +404,6 @@ export default function NewsTab() {
                 Delete ({selectedNews.length})
               </Button>
             )}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
 
             <Button
               variant="primary"
@@ -413,10 +422,14 @@ export default function NewsTab() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Articles</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Articles
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stats.total}
+                  </p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <FileText className="w-6 h-6 text-blue-600" />
@@ -427,10 +440,12 @@ export default function NewsTab() {
 
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Published</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.published}</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stats.published}
+                  </p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
                   <Eye className="w-6 h-6 text-green-600" />
@@ -441,10 +456,14 @@ export default function NewsTab() {
 
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Categories</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.categories}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Categories
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stats.categories}
+                  </p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-lg">
                   <Tag className="w-6 h-6 text-purple-600" />
@@ -455,10 +474,14 @@ export default function NewsTab() {
 
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.thisMonth}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    This Month
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stats.thisMonth}
+                  </p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-lg">
                   <Calendar className="w-6 h-6 text-yellow-600" />
@@ -472,8 +495,8 @@ export default function NewsTab() {
         <Card>
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <div className="pt-4 flex-1 relative">
+                <Search className="absolute left-3 top-9 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type="text"
                   placeholder="Search news by title, excerpt, or category..."
@@ -482,16 +505,18 @@ export default function NewsTab() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
+
+              <div className="pt-4 flex flex-col sm:flex-row gap-4">
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="all">All Categories</option>
-                  {uniqueCategories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {uniqueCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -504,7 +529,10 @@ export default function NewsTab() {
                 {searchTerm && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                     Search: {searchTerm}
-                    <button onClick={() => setSearchTerm("")} className="ml-1 hover:text-blue-600">
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="ml-1 hover:text-blue-600"
+                    >
                       ×
                     </button>
                   </span>
@@ -512,7 +540,10 @@ export default function NewsTab() {
                 {categoryFilter !== "all" && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                     Category: {categoryFilter}
-                    <button onClick={() => setCategoryFilter("all")} className="ml-1 hover:text-blue-600">
+                    <button
+                      onClick={() => setCategoryFilter("all")}
+                      className="ml-1 hover:text-blue-600"
+                    >
                       ×
                     </button>
                   </span>
@@ -525,14 +556,19 @@ export default function NewsTab() {
         {/* Results Info */}
         <div className="flex justify-between items-center">
           <p className="text-sm text-gray-600">
-            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredNews.length)} of {filteredNews.length} articles
+            Showing {startIndex + 1}-
+            {Math.min(startIndex + itemsPerPage, filteredNews.length)} of{" "}
+            {filteredNews.length} articles
           </p>
-          
+
           {filteredNews.length > 0 && (
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                checked={selectedNews.length === paginatedNews.length && paginatedNews.length > 0}
+                checked={
+                  selectedNews.length === paginatedNews.length &&
+                  paginatedNews.length > 0
+                }
                 onChange={handleSelectAll}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
@@ -546,12 +582,13 @@ export default function NewsTab() {
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No articles found</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No articles found
+              </h3>
               <p className="text-gray-600 mb-6">
                 {searchTerm || categoryFilter !== "all"
                   ? "Try adjusting your search criteria"
-                  : "Get started by creating your first news article"
-                }
+                  : "Get started by creating your first news article"}
               </p>
               {!searchTerm && categoryFilter === "all" && (
                 <Button
@@ -696,7 +733,9 @@ export default function NewsTab() {
                   className={formErrors.title ? "border-red-500" : ""}
                 />
                 {formErrors.title && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.title}
+                  </p>
                 )}
               </div>
 
@@ -706,13 +745,17 @@ export default function NewsTab() {
                 </label>
                 <Input
                   value={category}
-                  onChange={(e) => handleInputChange("category", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("category", e.target.value)
+                  }
                   type="text"
                   placeholder="e.g., Sports, Tournament, News"
                   className={formErrors.category ? "border-red-500" : ""}
                 />
                 {formErrors.category && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.category}
+                  </p>
                 )}
               </div>
             </div>
@@ -733,7 +776,9 @@ export default function NewsTab() {
                 disabled={isSubmitting}
               />
               {formErrors.excerpt && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.excerpt}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.excerpt}
+                </p>
               )}
             </div>
 
@@ -753,7 +798,9 @@ export default function NewsTab() {
                 disabled={isSubmitting}
               />
               {formErrors.content && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.content}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.content}
+                </p>
               )}
             </div>
 
@@ -769,7 +816,9 @@ export default function NewsTab() {
                 className={formErrors.imageUrl ? "border-red-500" : ""}
               />
               {formErrors.imageUrl && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.imageUrl}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.imageUrl}
+                </p>
               )}
               {imageUrl && (
                 <div className="mt-3">
@@ -808,8 +857,10 @@ export default function NewsTab() {
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     {editingNews ? "Updating..." : "Publishing..."}
                   </>
+                ) : editingNews ? (
+                  "Update Article"
                 ) : (
-                  editingNews ? "Update Article" : "Publish Article"
+                  "Publish Article"
                 )}
               </Button>
             </div>

@@ -23,6 +23,7 @@ export interface PolicyVerification {
 }
 
 export interface UserManagement {
+  id: string;
   name: string;
   email: string;
   phone: string;
