@@ -18,7 +18,11 @@ import { useNotifications } from "./NotificationContainer";
 import BlaxLogo from "@/assets/blax-logo.png";
 import Image from "next/image";
 
-export default function Navbar() {
+interface NavbarProps {
+  useScrollEffect?: boolean;
+}
+
+export default function Navbar({ useScrollEffect = false }: NavbarProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -64,14 +68,16 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 50);
-    };
+    if (useScrollEffect) {
+      const handleScroll = () => {
+        const scrollTop = window.scrollY;
+        setIsScrolled(scrollTop > 50);
+      };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+    }
+  }, [useScrollEffect]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -85,14 +91,95 @@ export default function Navbar() {
     }
   }, [isUserMenuOpen]);
 
+  // Dynamic styles based on useScrollEffect and isScrolled
+  const getNavbarStyles = () => {
+    if (!useScrollEffect) {
+      return "bg-white/95 backdrop-blur-md shadow-lg border border-gray-200/20";
+    }
+    return isScrolled
+      ? "bg-white/95 backdrop-blur-md shadow-lg border border-gray-200/20"
+      : "bg-white/10 backdrop-blur-sm border border-white/20";
+  };
+
+  const getTextStyles = () => {
+    if (!useScrollEffect) {
+      return "text-gray-700 hover:text-blue-600";
+    }
+    return isScrolled
+      ? "text-gray-700 hover:text-blue-600"
+      : "text-white/90 hover:text-white";
+  };
+
+  const getLogoStyles = () => {
+    if (!useScrollEffect) {
+      return "bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent";
+    }
+    return isScrolled
+      ? "bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent"
+      : "text-white";
+  };
+
+  const getButtonStyles = () => {
+    if (!useScrollEffect) {
+      return "hover:bg-gray-100 text-gray-700";
+    }
+    return isScrolled
+      ? "hover:bg-gray-100 text-gray-700"
+      : "hover:bg-white/10 text-white";
+  };
+
+  const getGradientStyles = () => {
+    if (!useScrollEffect) {
+      return "bg-gradient-to-r from-blue-500 to-teal-500";
+    }
+    return isScrolled
+      ? "bg-gradient-to-r from-blue-500 to-teal-500"
+      : "bg-gradient-to-r from-blue-400 to-teal-400";
+  };
+
+  const getMobileTextStyles = () => {
+    if (!useScrollEffect) {
+      return "text-gray-700 hover:text-blue-600 hover:bg-gray-50";
+    }
+    return isScrolled
+      ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+      : "text-white/90 hover:text-white hover:bg-white/10";
+  };
+
+  const getMobileBorderStyles = () => {
+    if (!useScrollEffect) {
+      return "border-gray-200/50";
+    }
+    return isScrolled ? "border-gray-200/50" : "border-white/20";
+  };
+
+  const getMobileUserTextStyles = () => {
+    if (!useScrollEffect) {
+      return "text-gray-700";
+    }
+    return isScrolled ? "text-gray-700" : "text-white";
+  };
+
+  const getMobileUserSecondaryTextStyles = () => {
+    if (!useScrollEffect) {
+      return "text-gray-500";
+    }
+    return isScrolled ? "text-gray-500" : "text-white/70";
+  };
+
+  const getSignOutStyles = () => {
+    if (!useScrollEffect) {
+      return "text-red-600 hover:bg-red-50";
+    }
+    return isScrolled
+      ? "text-red-600 hover:bg-red-50"
+      : "text-red-400 hover:bg-red-500/10";
+  };
+
   return (
     <>
       <nav
-        className={`fixed top-4 left-4 right-4 z-50 rounded-2xl transition-all duration-300 ${
-          isScrolled
-            ? "bg-white/95 backdrop-blur-md shadow-lg border border-gray-200/20"
-            : "bg-white/10 backdrop-blur-sm border border-white/20"
-        }`}
+        className={`fixed top-4 left-4 right-4 z-50 rounded-2xl transition-all duration-300 ${getNavbarStyles()}`}
       >
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
@@ -102,15 +189,10 @@ export default function Navbar() {
                 onClick={() => router.push("/")}
                 className="p-2 rounded-xl"
               >
-                {/* <Calendar className="h-6 w-6 text-white" /> */}
                 <Image src={BlaxLogo} alt="Logo" width={50} height={50} />
               </button>
               <button
-                className={`text-xl font-bold transition-colors duration-300 ${
-                  isScrolled
-                    ? "bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent"
-                    : "text-white"
-                }`}
+                className={`text-xl font-bold transition-colors duration-300 ${getLogoStyles()}`}
                 onClick={() => router.push("/")}
               >
                 Blax Football
@@ -121,54 +203,30 @@ export default function Navbar() {
             <div className="hidden md:flex items-center space-x-8">
               <Link
                 href="/schedule"
-                className={`font-medium transition-all duration-300 relative group ${
-                  isScrolled
-                    ? "text-gray-700 hover:text-blue-600"
-                    : "text-white/90 hover:text-white"
-                }`}
+                className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
               >
                 Schedule
                 <span
-                  className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${
-                    isScrolled
-                      ? "bg-gradient-to-r from-blue-500 to-teal-500"
-                      : "bg-gradient-to-r from-blue-400 to-teal-400"
-                  }`}
+                  className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
                 ></span>
               </Link>
               <Link
                 href="/news"
-                className={`font-medium transition-all duration-300 relative group ${
-                  isScrolled
-                    ? "text-gray-700 hover:text-blue-600"
-                    : "text-white/90 hover:text-white"
-                }`}
+                className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
               >
                 News
                 <span
-                  className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${
-                    isScrolled
-                      ? "bg-gradient-to-r from-blue-500 to-teal-500"
-                      : "bg-gradient-to-r from-blue-400 to-teal-400"
-                  }`}
+                  className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
                 ></span>
               </Link>
               {user && (
                 <Link
                   href="/dashboard"
-                  className={`font-medium transition-all duration-300 relative group ${
-                    isScrolled
-                      ? "text-gray-700 hover:text-blue-600"
-                      : "text-white/90 hover:text-white"
-                  }`}
+                  className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
                 >
                   Dashboard
                   <span
-                    className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${
-                      isScrolled
-                        ? "bg-gradient-to-r from-blue-500 to-teal-500"
-                        : "bg-gradient-to-r from-blue-400 to-teal-400"
-                    }`}
+                    className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
                   ></span>
                 </Link>
               )}
@@ -176,19 +234,11 @@ export default function Navbar() {
                 (user.role === "Admin" || user.role === "superadmin") && (
                   <Link
                     href="/admin"
-                    className={`font-medium transition-all duration-300 relative group ${
-                      isScrolled
-                        ? "text-gray-700 hover:text-blue-600"
-                        : "text-white/90 hover:text-white"
-                    }`}
+                    className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
                   >
                     Admin
                     <span
-                      className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${
-                        isScrolled
-                          ? "bg-gradient-to-r from-blue-500 to-teal-500"
-                          : "bg-gradient-to-r from-blue-400 to-teal-400"
-                      }`}
+                      className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
                     ></span>
                   </Link>
                 )}
@@ -214,14 +264,11 @@ export default function Navbar() {
                       }}
                       size="sm"
                       disabled={isSigningOut}
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                        isScrolled
-                          ? "hover:bg-gray-100 text-gray-700"
-                          : "hover:bg-white/10 text-white"
-                      } ${isSigningOut ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${getButtonStyles()} ${
+                        isSigningOut ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
                       Profile
-                      {/* <span className="font-medium">Profile</span> */}
                     </Button>
 
                     {/* Profile Dropdown */}
@@ -255,11 +302,7 @@ export default function Navbar() {
                   <button
                     onClick={handleSignOut}
                     disabled={isSigningOut}
-                    className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 ${
-                      isScrolled
-                        ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                        : "text-white/90 hover:text-white hover:bg-white/10"
-                    }`}
+                    className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 ${getTextStyles()}`}
                   >
                     {isSigningOut ? (
                       <div className="flex items-center gap-2">
@@ -291,11 +334,7 @@ export default function Navbar() {
             {/* Mobile Menu Button */}
             <button
               onClick={toggleMenu}
-              className={`md:hidden p-2 rounded-lg transition-all duration-300 ${
-                isScrolled
-                  ? "hover:bg-gray-100 text-gray-700"
-                  : "hover:bg-white/10 text-white"
-              }`}
+              className={`md:hidden p-2 rounded-lg transition-all duration-300 ${getButtonStyles()}`}
             >
               {isMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -316,22 +355,14 @@ export default function Navbar() {
             <div className="pt-4 space-y-4">
               <Link
                 href="/schedule"
-                className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${
-                  isScrolled
-                    ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                    : "text-white/90 hover:text-white hover:bg-white/10"
-                }`}
+                className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${getMobileTextStyles()}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Schedule
               </Link>
               <Link
                 href="/news"
-                className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${
-                  isScrolled
-                    ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                    : "text-white/90 hover:text-white hover:bg-white/10"
-                }`}
+                className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${getMobileTextStyles()}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 News
@@ -339,11 +370,7 @@ export default function Navbar() {
               {user && (
                 <Link
                   href="/admin"
-                  className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${
-                    isScrolled
-                      ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                      : "text-white/90 hover:text-white hover:bg-white/10"
-                  }`}
+                  className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${getMobileTextStyles()}`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Admin
@@ -351,7 +378,9 @@ export default function Navbar() {
               )}
 
               {/* Mobile Auth Section */}
-              <div className="pt-4 space-y-3 border-t border-white/20">
+              <div
+                className={`pt-4 space-y-3 border-t ${getMobileBorderStyles()}`}
+              >
                 {loading ? (
                   <div className="w-full h-10 animate-pulse bg-gray-200 rounded-lg"></div>
                 ) : user ? (
@@ -363,10 +392,14 @@ export default function Navbar() {
                           {user.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-medium truncate">
+                          <p
+                            className={`text-sm font-medium truncate ${getMobileUserTextStyles()}`}
+                          >
                             {user.name}
                           </p>
-                          <p className="text-xs opacity-70 truncate">
+                          <p
+                            className={`text-xs truncate ${getMobileUserSecondaryTextStyles()}`}
+                          >
                             {user.phone}
                           </p>
                         </div>
@@ -376,11 +409,7 @@ export default function Navbar() {
                     {/* Profile Button */}
                     <Link
                       href="/dashboard"
-                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center ${
-                        isScrolled
-                          ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                          : "text-white/90 hover:text-white hover:bg-white/10"
-                      }`}
+                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center ${getMobileTextStyles()}`}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <User className="h-4 w-4 mr-2" />
@@ -390,11 +419,7 @@ export default function Navbar() {
                     {/* Admin Button */}
                     <Link
                       href="/admin"
-                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center ${
-                        isScrolled
-                          ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                          : "text-white/90 hover:text-white hover:bg-white/10"
-                      }`}
+                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center ${getMobileTextStyles()}`}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <Shield className="h-4 w-4 mr-2" />
@@ -403,11 +428,7 @@ export default function Navbar() {
 
                     {/* Settings Button */}
                     <button
-                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center ${
-                        isScrolled
-                          ? "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                          : "text-white/90 hover:text-white hover:bg-white/10"
-                      }`}
+                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center ${getMobileTextStyles()}`}
                     >
                       <Settings className="h-4 w-4 mr-2" />
                       Account Settings
@@ -417,11 +438,9 @@ export default function Navbar() {
                     <button
                       onClick={handleSignOut}
                       disabled={isSigningOut}
-                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center border-t border-white/20 pt-4 mt-2 ${
-                        isScrolled
-                          ? "text-red-600 hover:bg-red-50"
-                          : "text-red-400 hover:bg-red-500/10"
-                      } ${isSigningOut ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`w-full text-left font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center border-t ${getMobileBorderStyles()} pt-4 mt-2 ${getSignOutStyles()} ${
+                        isSigningOut ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
                       {isSigningOut ? (
                         <>

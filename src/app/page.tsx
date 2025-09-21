@@ -8,7 +8,7 @@ import NewsSection from "@/components/organisms/News";
 export default function HomePage() {
   return (
     <div className="min-h-screen">
-      <Navbar />
+      <Navbar useScrollEffect={true} />
       <Hero />
       <SchedulesCarousel />
       <NewsSection />
