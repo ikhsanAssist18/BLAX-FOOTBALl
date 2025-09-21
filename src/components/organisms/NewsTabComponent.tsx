@@ -36,51 +36,6 @@ import Badge from "../atoms/Badge";
 import Pagination from "../atoms/Pagination";
 import { CardsLoadingSkeleton } from "./LoadingSkeleton";
 
-// Skeleton Components
-const NewsCardSkeleton = () => (
-  <Card className="animate-pulse">
-    <div className="relative overflow-hidden h-48 w-full bg-gray-200"></div>
-    <CardContent className="p-6">
-      <div className="space-y-3">
-        <div className="flex items-center space-x-2">
-          <div className="w-16 h-4 bg-gray-200 rounded-full"></div>
-          <div className="w-20 h-4 bg-gray-200 rounded"></div>
-        </div>
-        <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-        <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded"></div>
-          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-        </div>
-        <div className="flex justify-between items-center pt-4">
-          <div className="w-24 h-4 bg-gray-200 rounded"></div>
-          <div className="flex space-x-2">
-            <div className="w-16 h-8 bg-gray-200 rounded"></div>
-            <div className="w-16 h-8 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-const StatsSkeleton = () => (
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    {[...Array(4)].map((_, i) => (
-      <Card key={i} className="animate-pulse">
-        <CardContent className="p-6">
-          <div className="pt-4 flex items-center justify-between">
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-20"></div>
-              <div className="h-8 bg-gray-200 rounded w-16"></div>
-            </div>
-            <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-          </div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-);
-
 export default function NewsTab() {
   const [showNewsDialog, setShowNewsDialog] = useState(false);
   const [editingNews, setEditingNews] = useState<News | null>(null);
@@ -372,13 +327,15 @@ export default function NewsTab() {
                 className="flex items-center"
               >
                 <Trash2 className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
-                <span className="hidden md:inline">Hapus ({selectedNews.length})</span>
+                <span className="hidden md:inline">
+                  Hapus ({selectedNews.length})
+                </span>
                 <span className="md:hidden">({selectedNews.length})</span>
               </Button>
             )}
 
             <Button
-              variant="primary"
+              variant="black"
               size="sm"
               onClick={openAddNewsDialog}
               disabled={isLoading}
@@ -565,7 +522,7 @@ export default function NewsTab() {
               </p>
               {!searchTerm && categoryFilter === "all" && (
                 <Button
-                  variant="primary"
+                  variant="black"
                   onClick={openAddNewsDialog}
                   className="flex items-center mx-auto"
                 >
@@ -622,7 +579,7 @@ export default function NewsTab() {
                 </div>
 
                 <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  <h3 className="pt-6 font-bold text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                     {item.title}
                   </h3>
                   <p className="text-sm text-gray-600 mb-4 line-clamp-3">
@@ -820,7 +777,7 @@ export default function NewsTab() {
               </Button>
               <Button
                 size="sm"
-                variant="primary"
+                variant="black"
                 onClick={handleSubmitNews}
                 disabled={isSubmitting}
                 className="flex items-center"

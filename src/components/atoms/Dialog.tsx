@@ -37,7 +37,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
             className="fixed inset-0 bg-black/50"
             onClick={() => onOpenChange(false)}
           />
-          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-lg shadow-xl mx-4 max-h-[90vh] overflow-y-auto">
             {children}
           </div>
         </div>

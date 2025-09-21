@@ -39,7 +39,7 @@ import { ScheduleOverview } from "@/types/schedule";
 import { useNotifications } from "./NotificationContainer";
 import { scheduleService } from "@/utils/schedule";
 import { adminService } from "@/utils/admin";
-import { masterDataService } from "@/utils/masterData";
+import { masterDataService, Rule } from "@/utils/masterData";
 import { formatDate } from "@/lib/helper";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import Pagination from "../atoms/Pagination";
@@ -136,8 +136,10 @@ export default function ScheduleTab({
   // New states for venues and facilities
   const [venues, setVenues] = useState<Venue[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [rules, setRules] = useState<Rule[]>([]);
   const [isLoadingVenues, setIsLoadingVenues] = useState(false);
   const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
+  const [isLoadingRules, setIsLoadingRules] = useState(false);
 
   // Form states for new/edit schedule
   const [scheduleForm, setScheduleForm] = useState({
@@ -151,7 +153,8 @@ export default function ScheduleTab({
     typeEvent: "",
     typeMatch: "",
     description: "",
-    facilityIds: [] as string[], // Changed from facilities object to facilityIds array
+    facilityIds: [] as string[],
+    ruleIds: [] as string[],
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -160,6 +163,7 @@ export default function ScheduleTab({
     fetchScheduleOverview();
     fetchVenues();
     fetchFacilities();
+    fetchRules();
   }, []);
 
   useEffect(() => {
@@ -202,6 +206,23 @@ export default function ScheduleTab({
       showError("Error", "Failed to load facilities");
     } finally {
       setIsLoadingFacilities(false);
+    }
+  };
+
+  const fetchRules = async () => {
+    try {
+      setIsLoadingRules(true);
+      const response = await masterDataService.getRules(
+        searchTerm,
+        currentPage,
+        10
+      );
+      setRules(response);
+    } catch (error) {
+      console.error("Error fetching rules:", error);
+      showError("Error", "Failed to load rules");
+    } finally {
+      setIsLoadingRules(false);
     }
   };
 
@@ -281,6 +302,15 @@ export default function ScheduleTab({
     }));
   };
 
+  const handleRuleChange = (ruleId: string, checked: boolean) => {
+    setScheduleForm((prev) => ({
+      ...prev,
+      ruleIds: checked
+        ? [...prev.ruleIds, ruleId]
+        : prev.ruleIds.filter((id) => id !== ruleId),
+    }));
+  };
+
   const handleSaveSchedule = async () => {
     if (!validateForm()) {
       return;
@@ -320,6 +350,7 @@ export default function ScheduleTab({
       typeMatch: "",
       description: "",
       facilityIds: [],
+      ruleIds: [],
     });
     setFormErrors({});
     setEditingSchedule(null);
@@ -339,10 +370,11 @@ export default function ScheduleTab({
       totalSlots: schedule.totalSlots.toString(),
       feePlayer: schedule.feePlayer.toString(),
       feeGk: schedule.feeGk.toString(),
-      typeEvent: "Open", // Default values since not in ScheduleOverview
+      typeEvent: "Open",
       typeMatch: "Futsal",
       description: "",
-      facilityIds: [], // You might want to include facility data in ScheduleOverview
+      facilityIds: [],
+      ruleIds: [],
     });
     setShowScheduleDialog(true);
   };
@@ -440,13 +472,15 @@ export default function ScheduleTab({
               className="flex items-center"
             >
               <Trash2 className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
-              <span className="hidden md:inline">Hapus ({selectedSchedules.length})</span>
+              <span className="hidden md:inline">
+                Hapus ({selectedSchedules.length})
+              </span>
               <span className="md:hidden">({selectedSchedules.length})</span>
             </Button>
           )}
 
           <Button
-            variant="primary"
+            variant="black"
             size="sm"
             onClick={() => setShowScheduleDialog(true)}
             className="flex items-center"
@@ -804,18 +838,18 @@ export default function ScheduleTab({
 
       {/* Add/Edit Schedule Dialog */}
       <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingSchedule ? "Edit Schedule" : "Add New Schedule"}
+              {editingSchedule ? "Edit Jadwal" : "Tambah Jadwal Baru"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Schedule Name *
+                  Nama Jadwal *
                 </label>
                 <Input
                   type="text"
@@ -830,26 +864,14 @@ export default function ScheduleTab({
                   <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
                 )}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Description
-                </label>
-                <Input
-                  type="text"
-                  value={scheduleForm.description}
-                  onChange={(e) =>
-                    handleScheduleInputChange("description", e.target.value)
-                  }
-                  placeholder="Enter description (optional)"
-                />
-              </div>
             </div>
 
             {/* Date and Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Date *</label>
+                <label className="block text-sm font-medium mb-2">
+                  Tanggal *
+                </label>
                 <Input
                   type="date"
                   value={scheduleForm.date}
@@ -863,7 +885,7 @@ export default function ScheduleTab({
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Time *</label>
+                <label className="block text-sm font-medium mb-2">Jam *</label>
                 <Input
                   type="time"
                   value={scheduleForm.time}
@@ -1029,7 +1051,7 @@ export default function ScheduleTab({
             {/* Facilities */}
             <div>
               <label className="block text-sm font-medium mb-3">
-                Facilities
+                Fasilitas
               </label>
               {isLoadingFacilities ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1080,6 +1102,52 @@ export default function ScheduleTab({
               )}
             </div>
 
+            {/* Rules */}
+            <div>
+              <label className="block text-sm font-medium mb-3">Rules</label>
+              {isLoadingRules ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="p-3 border rounded-lg animate-pulse"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {rules.map((rule) => (
+                    <label
+                      key={rule.id}
+                      className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={scheduleForm.ruleIds.includes(rule.id)}
+                        onChange={(e) =>
+                          handleRuleChange(rule.id, e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium">
+                        {rule.description}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {rules.length === 0 && !isLoadingRules && (
+                <p className="text-gray-500 text-sm">
+                  No rules available. Please add rules in Master Data first.
+                </p>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="flex justify-end space-x-3 pt-6 border-t">
               <Button
@@ -1094,7 +1162,7 @@ export default function ScheduleTab({
                 Cancel
               </Button>
               <Button
-                variant="primary"
+                variant="black"
                 size="sm"
                 onClick={handleSaveSchedule}
                 disabled={

@@ -342,9 +342,11 @@ export default function UsersTab() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Manajemen Pengguna</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+            User Management
+          </h2>
           <p className="text-sm md:text-base text-gray-600 mt-1">
-            Kelola akun pengguna dan izin akses
+            Kelola user account dan izin akses
           </p>
         </div>
 
@@ -357,19 +359,21 @@ export default function UsersTab() {
               className="flex items-center"
             >
               <Trash2 className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
-              <span className="hidden md:inline">Hapus ({selectedUsers.length})</span>
+              <span className="hidden md:inline">
+                Hapus ({selectedUsers.length})
+              </span>
               <span className="md:hidden">({selectedUsers.length})</span>
             </Button>
           )}
 
           <Button
-            variant="primary"
+            variant="black"
             size="sm"
             onClick={() => setShowUserDialog(true)}
             className="flex items-center"
           >
             <UserPlus className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
-            <span className="hidden md:inline">Tambah Pengguna</span>
+            <span className="hidden md:inline">Tambah User</span>
             <span className="md:hidden">Tambah</span>
           </Button>
         </div>
@@ -606,7 +610,7 @@ export default function UsersTab() {
               </TableHeader>
               <TableBody>
                 {paginatedUsers.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-gray-50">
+                  <TableRow key={user.id}>
                     <TableCell>
                       <input
                         type="checkbox"
@@ -838,7 +842,7 @@ export default function UsersTab() {
                 Cancel
               </Button>
               <Button
-                variant="primary"
+                variant="black"
                 size="sm"
                 onClick={handleSaveUser}
                 disabled={actionLoading === "save"}
