@@ -30,7 +30,7 @@ const positionColors = {
 // Skeleton Loading Component
 function SkeletonLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-400 to-blue-500">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         {/* Back Button Skeleton */}
@@ -89,13 +89,13 @@ function NotFoundDisplay() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-400 to-blue-500">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <Button
           variant="ghost"
           onClick={() => router.back()}
-          className="mb-6 hover:bg-sky-50"
+          className="mb-6 hover:bg-white/80 backdrop-blur-sm text-slate-700 border border-emerald-100 shadow-md hover:shadow-lg"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
@@ -103,10 +103,10 @@ function NotFoundDisplay() {
 
         <div className="bg-white rounded-2xl p-12 text-center shadow-lg">
           <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
             Match Not Found
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-slate-600 mb-6">
             Sorry, the match you're looking for could not be found or may have
             been removed.
           </p>
@@ -244,33 +244,33 @@ export default function ScheduleDetailPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-sky-400 to-blue-500">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           {/* Back Button */}
           <Button
             variant="ghost"
             onClick={() => router.back()}
-            className="mb-6 hover:bg-sky-50"
+            className="mb-6 hover:bg-white/80 backdrop-blur-sm text-slate-700 border border-emerald-100 shadow-md hover:shadow-lg"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
 
           {/* Hero Section */}
-          <div className="relative rounded-2xl overflow-hidden mb-8 h-64 md:h-80">
+          <div className="relative rounded-2xl overflow-hidden mb-8 h-64 md:h-80 shadow-xl border border-emerald-200">
             <img
               src={schedule.imageUrl}
               alt={schedule.venue}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6 text-white">
               <div className="flex items-center space-x-2 mb-2">
-                <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30">
+                <Badge className="bg-white/25 backdrop-blur-md text-white border-white/40 shadow-lg">
                   {schedule.typeEvent}
                 </Badge>
-                <Badge className="bg-green-500/80 text-white">
+                <Badge className="bg-emerald-500/90 text-white border border-emerald-400/50 shadow-lg">
                   {schedule.openSlots} slots available
                 </Badge>
               </div>
@@ -301,53 +301,53 @@ export default function ScheduleDetailPage() {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-xl shadow-sm">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 hover:shadow-xl transition-all duration-300">
               <div className="p-4 text-center">
-                <Users className="h-8 w-8 text-sky-500 mx-auto mb-2" />
+                <Users className="h-8 w-8 text-blue-500 mx-auto mb-2" />
                 <div className="text-2xl font-bold">
                   {schedule.bookedSlots}/{schedule.totalSlots}
                 </div>
-                <div className="text-sm text-gray-600">Players Joined</div>
+                <div className="text-sm text-slate-600">Players Joined</div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-emerald-100 hover:shadow-xl transition-all duration-300">
               <div className="p-4 text-center space-y-2">
-                <Wallet className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                <Wallet className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
 
                 <div>
                   <div className="text-2xl font-bold">
                     {formatCurrency(Number(schedule.feePlayer))}
                   </div>
-                  <div className="text-sm text-gray-600">Per Player</div>
+                  <div className="text-sm text-slate-600">Per Player</div>
                 </div>
 
                 <div>
                   <div className="text-2xl font-bold">
                     {formatCurrency(Number(schedule.feeGk))}
                   </div>
-                  <div className="text-sm text-gray-600">Per Goalkeeper</div>
+                  <div className="text-sm text-slate-600">Per Goalkeeper</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-teal-100 hover:shadow-xl transition-all duration-300">
               <div className="p-4 text-center">
-                <Shield className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                <Shield className="h-8 w-8 text-teal-500 mx-auto mb-2" />
                 <div className="text-2xl font-bold">
                   {schedule.facilities.length}
                 </div>
-                <div className="text-sm text-gray-600">Facilities</div>
+                <div className="text-sm text-slate-600">Facilities</div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-orange-100 hover:shadow-xl transition-all duration-300">
               <div className="p-4 text-center">
                 <Star className="h-8 w-8 text-orange-500 mx-auto mb-2" />
                 <div className="text-2xl font-bold">
                   {Math.round(occupancyPercentage)}%
                 </div>
-                <div className="text-sm text-gray-600">Occupancy</div>
+                <div className="text-sm text-slate-600">Occupancy</div>
               </div>
             </div>
           </div>
@@ -358,11 +358,12 @@ export default function ScheduleDetailPage() {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-lg">
               <TabsTrigger
                 value="overview"
                 onClick={setActiveTab}
                 isActive={activeTab === "overview"}
+                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700"
               >
                 Overview
               </TabsTrigger>
@@ -370,6 +371,7 @@ export default function ScheduleDetailPage() {
                 value="lineup"
                 onClick={setActiveTab}
                 isActive={activeTab === "lineup"}
+                className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
               >
                 Live Lineup
               </TabsTrigger>
@@ -377,6 +379,7 @@ export default function ScheduleDetailPage() {
                 value="facilities"
                 onClick={setActiveTab}
                 isActive={activeTab === "facilities"}
+                className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700"
               >
                 Facilities
               </TabsTrigger>
@@ -384,6 +387,7 @@ export default function ScheduleDetailPage() {
                 value="rules"
                 onClick={setActiveTab}
                 isActive={activeTab === "rules"}
+                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-700"
               >
                 Match Rules
               </TabsTrigger>
@@ -396,27 +400,27 @@ export default function ScheduleDetailPage() {
             >
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                  <div className="bg-white rounded-xl shadow-sm">
-                    <div className="p-6 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-emerald-100">
+                    <div className="p-6 border-b border-slate-200">
+                      <h3 className="text-lg font-semibold text-slate-900">
                         Match Information
                       </h3>
                     </div>
                     <div className="p-6 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <h4 className="font-semibold text-gray-900">
+                          <h4 className="font-semibold text-slate-900">
                             Match Details
                           </h4>
                           <div className="space-y-1 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Type:</span>
+                              <span className="text-slate-600">Type:</span>
                               <span className="font-medium">
                                 {schedule.typeMatch}
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Event:</span>
+                              <span className="text-slate-600">Event:</span>
                               <span className="font-medium">
                                 {schedule.typeEvent}
                               </span>
@@ -431,7 +435,7 @@ export default function ScheduleDetailPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <h4 className="font-semibold text-gray-900">
+                          <h4 className="font-semibold text-slate-900">
                             Booking Status
                           </h4>
                           <div className="space-y-2">
@@ -443,9 +447,9 @@ export default function ScheduleDetailPage() {
                             </div>
                             <Progress
                               value={occupancyPercentage}
-                              className="h-2"
+                              className="h-2 bg-slate-200"
                             />
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-500">
                               {schedule.openSlots} slots remaining
                             </p>
                           </div>
@@ -456,41 +460,41 @@ export default function ScheduleDetailPage() {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="bg-white rounded-xl shadow-sm">
-                    <div className="p-6 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100">
+                    <div className="p-6 border-b border-slate-200">
+                      <h3 className="text-lg font-semibold text-slate-900">
                         Quick Actions
                       </h3>
                     </div>
                     <div className="p-6 space-y-3">
-                      <Button className="w-full" variant="primary" size="lg">
+                      <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-md hover:shadow-lg" variant="primary" size="lg">
                         Book Now
                       </Button>
-                      <Button className="w-full" variant="outline">
+                      <Button className="w-full border-emerald-200 text-emerald-600 hover:bg-emerald-50" variant="outline">
                         Share Match
                       </Button>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl shadow-sm">
-                    <div className="p-6 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-teal-100">
+                    <div className="p-6 border-b border-slate-200">
+                      <h3 className="text-lg font-semibold text-slate-900">
                         Venue Information
                       </h3>
                     </div>
                     <div className="p-6 space-y-3">
                       <div className="flex items-start space-x-2">
-                        <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                        <MapPin className="w-4 h-4 text-teal-500 mt-0.5" />
                         <div>
-                          <p className="font-sm font-bold">{schedule.venue}</p>
-                          <p className="font-sm">{schedule.address}</p>
+                          <p className="font-sm font-bold text-slate-900">{schedule.venue}</p>
+                          <p className="font-sm text-slate-600">{schedule.address}</p>
                         </div>
                       </div>
                       <Button
                         href={schedule.gmapLink}
-                        variant="outline"
+                        variant="outline" 
                         size="sm"
-                        className="w-full"
+                        className="w-full border-teal-200 text-teal-600 hover:bg-teal-50"
                       >
                         View on Map
                       </Button>
@@ -511,14 +515,14 @@ export default function ScheduleDetailPage() {
                     ([teamKey, team]: [string, any]) => (
                       <div
                         key={teamKey}
-                        className="bg-white rounded-xl shadow-sm"
+                        className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100"
                       >
-                        <div className="p-6 border-b border-gray-200">
+                        <div className="p-6 border-b border-slate-200">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-lg font-semibold text-slate-900">
                               Team {teamKey}
                             </h3>
-                            <Badge variant="outline">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                               {(team.PLAYERS?.length || 0) + (team.GK ? 1 : 0)}{" "}
                               Players
                             </Badge>
@@ -528,24 +532,24 @@ export default function ScheduleDetailPage() {
                           <div className="space-y-3">
                             {/* Goalkeeper */}
                             {team.GK && (
-                              <div className="flex items-center space-x-3 p-3 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition-colors">
+                              <div className="flex items-center space-x-3 p-3 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors border border-amber-200">
                                 <Avatar className="h-10 w-10">
-                                  <AvatarFallback className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-sm">
+                                  <AvatarFallback className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm">
                                     {team.GK.name.charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-gray-900 truncate">
+                                  <p className="font-medium text-slate-900 truncate">
                                     {team.GK.name}
                                   </p>
                                   <div className="flex items-center space-x-2">
                                     <Badge
-                                      className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs"
+                                      className="bg-amber-100 text-amber-800 border-amber-200 text-xs"
                                       variant="outline"
                                     >
                                       GK
                                     </Badge>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-slate-500">
                                       {team.GK.phone}
                                     </span>
                                   </div>
@@ -557,7 +561,7 @@ export default function ScheduleDetailPage() {
                             {team.PLAYERS?.map((player: any, index: number) => (
                               <div
                                 key={index}
-                                className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
+                                className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-200"
                               >
                                 <Avatar className="h-10 w-10">
                                   <AvatarFallback className="bg-gradient-to-r from-blue-400 to-blue-500 text-white text-sm">
@@ -565,7 +569,7 @@ export default function ScheduleDetailPage() {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-gray-900 truncate">
+                                  <p className="font-medium text-slate-900 truncate">
                                     {player.name}
                                   </p>
                                   <div className="flex items-center space-x-2">
@@ -575,7 +579,7 @@ export default function ScheduleDetailPage() {
                                     >
                                       PLAYER
                                     </Badge>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-slate-500">
                                       {player.phone}
                                     </span>
                                   </div>
@@ -589,12 +593,12 @@ export default function ScheduleDetailPage() {
                   )}
                 </div>
               ) : (
-                <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-slate-100 p-12 text-center">
+                  <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">
                     No Lineup Yet
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-slate-600">
                     Teams will be formed once more players join the match.
                   </p>
                 </div>
@@ -606,9 +610,9 @@ export default function ScheduleDetailPage() {
               activeTab={activeTab}
               className="space-y-6"
             >
-              <div className="bg-white rounded-xl shadow-sm">
-                <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-emerald-100">
+                <div className="p-6 border-b border-slate-200">
+                  <h3 className="text-lg font-semibold text-slate-900">
                     Available Facilities
                   </h3>
                 </div>
@@ -617,10 +621,10 @@ export default function ScheduleDetailPage() {
                     {schedule.facilities.map((facility: any, index: number) => (
                       <div
                         key={index}
-                        className="flex items-center space-x-2 p-3 bg-green-50 rounded-lg"
+                        className="flex items-center space-x-2 p-3 bg-emerald-50 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
                       >
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-800">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-emerald-800">
                           {facility.name}
                         </span>
                       </div>
@@ -635,9 +639,9 @@ export default function ScheduleDetailPage() {
               activeTab={activeTab}
               className="space-y-6"
             >
-              <div className="bg-white rounded-xl shadow-sm">
-                <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-violet-100">
+                <div className="p-6 border-b border-slate-200">
+                  <h3 className="text-lg font-semibold text-slate-900">
                     Match Rules & Regulations
                   </h3>
                 </div>
@@ -646,10 +650,10 @@ export default function ScheduleDetailPage() {
                     <div className="space-y-3">
                       {schedule.rules.map((rule: Rules, index: number) => (
                         <div key={index} className="flex items-start space-x-3">
-                          <div className="w-6 h-6 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-sm font-medium mt-0.5">
+                          <div className="w-6 h-6 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center text-sm font-medium mt-0.5">
                             {index + 1}
                           </div>
-                          <p className="text-gray-700 flex-1">
+                          <p className="text-slate-700 flex-1">
                             {rule.description}
                           </p>
                         </div>
@@ -657,11 +661,11 @@ export default function ScheduleDetailPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                      <Shield className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                      <h4 className="text-lg font-semibold text-slate-900 mb-2">
                         No Specific Rules
                       </h4>
-                      <p className="text-gray-600">
+                      <p className="text-slate-600">
                         Standard football rules apply. Have fun and play fair!
                       </p>
                     </div>

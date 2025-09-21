@@ -23,6 +23,7 @@ import FacilityManagement from "@/components/organisms/FacilityManagement";
 import VenuesAndRulesTab from "@/components/organisms/VenuesAndRulesTab";
 import ReportsTab from "@/components/organisms/ReportsTab";
 import SettingsTab from "@/components/organisms/SettingsTab";
+import BookingHistoryTab from "@/components/organisms/BookingHistoryTab";
 
 // Tabs Components
 function Tabs({ value, onValueChange, className, children }: any) {
@@ -285,6 +286,15 @@ export default function AdminPage() {
               <span className="hidden md:inline">Pengaturan</span>
               <span className="md:hidden">Set</span>
             </TabsTrigger>
+            <TabsTrigger
+              value="booking-history"
+              onClick={setSelectedTab}
+              isActive={selectedTab === "booking-history"}
+              className="text-xs md:text-sm"
+            >
+              <span className="hidden md:inline">Booking History</span>
+              <span className="md:hidden">History</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -321,6 +331,14 @@ export default function AdminPage() {
             className="space-y-6 transition-all duration-300 ease-in-out"
           >
             <NewsTab />
+          </TabsContent>
+
+          <TabsContent
+            value="booking-history"
+            activeTab={selectedTab}
+            className="space-y-6 transition-all duration-300 ease-in-out"
+          >
+            <BookingHistoryTab />
           </TabsContent>
 
           {/* Venues and Rules Tab */}

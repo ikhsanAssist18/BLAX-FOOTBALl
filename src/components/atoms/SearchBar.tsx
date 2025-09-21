@@ -30,7 +30,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSearch }) => {
         placeholder={placeholder}
         value={query}
         onChange={handleChange}
-        className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white text-gray-900 text-sm"
+        className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-900 text-sm transition-all duration-200"
       />
 
       {/* Clear button */}
@@ -38,7 +38,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSearch }) => {
         <button
           type="button"
           onClick={clearSearch}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
