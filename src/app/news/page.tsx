@@ -370,7 +370,7 @@ export default function NewsPage() {
 
                   {/* Excerpt */}
                   <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {article.excerpt}
+                    <span dangerouslySetInnerHTML={{ __html: article.excerpt }} />
                   </p>
 
                   {/* Footer */}

@@ -213,7 +213,7 @@ export default function NewsDetailPage() {
             <div className="mb-8">
               <div
                 dangerouslySetInnerHTML={{ __html: article.content }}
-                className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700 prose-a:text-sky-600 prose-strong:text-gray-900"
+                className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700 prose-a:text-sky-600 prose-strong:text-gray-900 prose-blockquote:border-l-sky-500 prose-blockquote:bg-sky-50 prose-blockquote:pl-4 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
               />
             </div>
 

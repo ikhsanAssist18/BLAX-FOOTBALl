@@ -21,6 +21,8 @@ import VenueManagement from "@/components/organisms/VenueManagement";
 import RuleManagement from "@/components/organisms/RuleManagement";
 import FacilityManagement from "@/components/organisms/FacilityManagement";
 import VenuesAndRulesTab from "@/components/organisms/VenuesAndRulesTab";
+import ReportsTab from "@/components/organisms/ReportsTab";
+import SettingsTab from "@/components/organisms/SettingsTab";
 
 // Tabs Components
 function Tabs({ value, onValueChange, className, children }: any) {
@@ -345,10 +347,7 @@ export default function AdminPage() {
             activeTab={selectedTab}
             className="space-y-6 transition-all duration-300 ease-in-out"
           >
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold mb-4">Laporan</h2>
-              <p className="text-gray-600">Fitur laporan akan segera hadir</p>
-            </div>
+            <ReportsTab />
           </TabsContent>
 
           {/* Settings Tab - Placeholder */}
@@ -357,10 +356,7 @@ export default function AdminPage() {
             activeTab={selectedTab}
             className="space-y-6 transition-all duration-300 ease-in-out"
           >
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold mb-4">Pengaturan</h2>
-              <p className="text-gray-600">Fitur pengaturan akan segera hadir</p>
-            </div>
+            <SettingsTab />
           </TabsContent>
         </Tabs>
       </div>

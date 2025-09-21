@@ -95,10 +95,9 @@ export default function NewsSection() {
                   {news.title}
                 </h3>
 
-                <div
-                  dangerouslySetInnerHTML={{ __html: news.content }}
-                  className="text-gray-600 mb-4 line-clamp-3 leading-relaxed"
-                />
+                <p className="text-gray-600 mb-4 line-clamp-3 leading-relaxed">
+                  {news.excerpt}
+                </p>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">

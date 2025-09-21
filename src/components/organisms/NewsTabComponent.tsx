@@ -18,6 +18,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import Button from "../atoms/Button";
+import RichTextEditor from "../atoms/RichTextEditor";
 import {
   Dialog,
   DialogContent,
@@ -716,16 +717,12 @@ export default function NewsTab() {
               <label htmlFor="content" className="block mb-2 font-medium">
                 Content *
               </label>
-              <textarea
-                id="content"
+              <RichTextEditor
                 value={content}
-                onChange={(e) => handleInputChange("content", e.target.value)}
-                rows={8}
-                placeholder="Full article content"
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  formErrors.content ? "border-red-500" : "border-gray-300"
-                }`}
+                onChange={(value) => handleInputChange("content", value)}
+                placeholder="Write your article content here..."
                 disabled={isSubmitting}
+                className={formErrors.content ? "border-red-500" : ""}
               />
               {formErrors.content && (
                 <p className="text-red-500 text-sm mt-1">
