@@ -156,28 +156,29 @@ export default function NewsDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-400 to-blue-500">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="mb-6 flex items-center px-4 py-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+          className="mb-6 flex items-center px-4 py-2 text-slate-700 bg-white/80 backdrop-blur-sm hover:bg-white border border-blue-100 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </button>
 
         {/* Article Content Card */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl overflow-hidden border border-blue-100">
           {/* Featured Image */}
           {article.imageUrl && (
-            <div className="w-full h-64 md:h-96 overflow-hidden">
+            <div className="w-full h-64 md:h-96 overflow-hidden relative">
               <img
                 src={article.imageUrl}
                 alt={article.title}
                 className="w-full h-full object-cover"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
             </div>
           )}
 
@@ -185,26 +186,26 @@ export default function NewsDetailPage() {
             {/* Article Header */}
             <div className="mb-8">
               <div className="flex items-center space-x-4 mb-4">
-                <span className="inline-block px-3 py-1 text-sm font-semibold text-sky-800 bg-sky-100 rounded-full">
+                <span className="inline-block px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full border border-blue-200">
                   {article.category}
                 </span>
-                <div className="flex items-center text-gray-500 text-sm">
+                <div className="flex items-center text-slate-500 text-sm">
                   <Calendar className="w-4 h-4 mr-1" />
                   {formatDate(article.publishAt)}
                 </div>
                 {article.readTime && (
-                  <div className="flex items-center text-gray-500 text-sm">
+                  <div className="flex items-center text-slate-500 text-sm">
                     <Clock className="w-4 h-4 mr-1" />
                     {article.readTime}
                   </div>
                 )}
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
                 {article.title}
               </h1>
 
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-xl text-slate-600 leading-relaxed">
                 {article.excerpt}
               </p>
             </div>
@@ -213,19 +214,19 @@ export default function NewsDetailPage() {
             <div className="mb-8">
               <div
                 dangerouslySetInnerHTML={{ __html: article.content }}
-                className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700 prose-a:text-sky-600 prose-strong:text-gray-900 prose-blockquote:border-l-sky-500 prose-blockquote:bg-sky-50 prose-blockquote:pl-4 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
+                className="prose prose-lg max-w-none prose-headings:text-slate-900 prose-p:text-slate-700 prose-li:text-slate-700 prose-a:text-blue-600 prose-strong:text-slate-900 prose-blockquote:border-l-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:pl-4 prose-code:bg-slate-100 prose-code:px-2 prose-code:py-1 prose-code:rounded"
               />
             </div>
 
             {/* Share Button */}
-            <div className="border-t border-gray-200 pt-8">
+            <div className="border-t border-slate-200 pt-8">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-slate-500">
                   Published on {formatDate(article.publishAt)}
                 </div>
                 <button
                   onClick={handleShare}
-                  className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-sky-50 hover:border-sky-300 transition-colors"
+                  className="flex items-center px-4 py-2 border border-slate-300 rounded-lg text-slate-700 bg-white hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md"
                 >
                   <Share2 className="w-4 h-4 mr-2" />
                   Share Article
@@ -239,7 +240,7 @@ export default function NewsDetailPage() {
         <div className="mt-12 text-center">
           <button
             onClick={() => router.push("/news")}
-            className="px-8 py-4 bg-white text-sky-600 rounded-lg hover:bg-sky-50 transition-colors font-medium text-lg shadow-md"
+            className="px-8 py-4 bg-white/90 backdrop-blur-sm text-blue-600 rounded-lg hover:bg-white border border-blue-200 transition-all duration-300 font-medium text-lg shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             Read More Articles
           </button>
