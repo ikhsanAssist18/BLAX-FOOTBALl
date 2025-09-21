@@ -345,7 +345,7 @@ export default function ReportsTab() {
           </Button>
 
           <Button
-            variant="primary"
+            variant="danger"
             size="sm"
             onClick={generatePDFReport}
             className="flex items-center"
@@ -355,7 +355,7 @@ export default function ReportsTab() {
           </Button>
 
           <Button
-            variant="primary"
+            variant="black"
             size="sm"
             onClick={generateExcelReport}
             className="flex items-center bg-green-600 hover:bg-green-700"
@@ -369,7 +369,7 @@ export default function ReportsTab() {
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Report Type
@@ -433,7 +433,7 @@ export default function ReportsTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Total Bookings
@@ -455,12 +455,12 @@ export default function ReportsTab() {
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Total Revenue
                 </p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-lg font-bold text-gray-900">
                   Rp {(reportData.summary.totalRevenue / 1000000).toFixed(1)}M
                 </p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
@@ -469,7 +469,7 @@ export default function ReportsTab() {
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-green-600" />
+                <DollarSign className="w-4 h-4 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -477,7 +477,7 @@ export default function ReportsTab() {
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Total Players
@@ -499,7 +499,7 @@ export default function ReportsTab() {
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Occupancy Rate
@@ -521,7 +521,7 @@ export default function ReportsTab() {
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Completed</p>
                 <p className="text-3xl font-bold text-gray-900">
@@ -541,7 +541,7 @@ export default function ReportsTab() {
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Active Bookings
@@ -723,7 +723,7 @@ export default function ReportsTab() {
       {/* Export Summary */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="pt-4 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
                 Export Options

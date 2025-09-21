@@ -65,7 +65,7 @@ export default function AdminPage() {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("overview");
+  const [selectedTab, setSelectedTab] = useState("reports");
 
   useEffect(() => {
     checkAdminAccess();
@@ -168,7 +168,9 @@ export default function AdminPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium">Pendapatan</CardTitle>
+              <CardTitle className="text-xs md:text-sm font-medium">
+                Pendapatan
+              </CardTitle>
               <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 md:p-6 pt-0">
@@ -217,7 +219,7 @@ export default function AdminPage() {
           className="space-y-6 transition-all duration-300"
         >
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1 p-1">
-            <TabsTrigger
+            {/* <TabsTrigger
               value="overview"
               onClick={setSelectedTab}
               isActive={selectedTab === "overview"}
@@ -225,6 +227,15 @@ export default function AdminPage() {
             >
               <span className="hidden md:inline">Overview</span>
               <span className="md:hidden">Home</span>
+            </TabsTrigger> */}
+            <TabsTrigger
+              value="reports"
+              onClick={setSelectedTab}
+              isActive={selectedTab === "reports"}
+              className="text-xs md:text-sm"
+            >
+              <span className="hidden md:inline">Laporan</span>
+              <span className="md:hidden">Rep</span>
             </TabsTrigger>
             <TabsTrigger
               value="schedules"
@@ -269,15 +280,6 @@ export default function AdminPage() {
               <span className="md:hidden">Fas</span>
             </TabsTrigger>
             <TabsTrigger
-              value="reports"
-              onClick={setSelectedTab}
-              isActive={selectedTab === "reports"}
-              className="text-xs md:text-sm"
-            >
-              <span className="hidden md:inline">Laporan</span>
-              <span className="md:hidden">Rep</span>
-            </TabsTrigger>
-            <TabsTrigger
               value="settings"
               onClick={setSelectedTab}
               isActive={selectedTab === "settings"}
@@ -298,13 +300,13 @@ export default function AdminPage() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent
+          {/* <TabsContent
             value="overview"
             activeTab={selectedTab}
             className="space-y-6 transition-all duration-300 ease-in-out"
           >
             <OverviewTab />
-          </TabsContent>
+          </TabsContent> */}
 
           {/* Schedule Tab */}
           <TabsContent
