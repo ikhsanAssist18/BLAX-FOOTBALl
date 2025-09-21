@@ -22,6 +22,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import autoTable from "jspdf-autotable";
 
 // Mock data for reports
 const mockReportData = {
@@ -103,9 +104,9 @@ export default function ReportsTab() {
     // Set default date range
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    
-    setEndDate(today.toISOString().split('T')[0]);
-    setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
+
+    setEndDate(today.toISOString().split("T")[0]);
+    setStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
   }, []);
 
   const handleRefreshData = async () => {
@@ -113,7 +114,7 @@ export default function ReportsTab() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       // In real implementation, fetch fresh data from API
       setReportData(mockReportData);
       showSuccess("Data refreshed successfully");
@@ -127,32 +128,38 @@ export default function ReportsTab() {
   const generatePDFReport = () => {
     try {
       const doc = new jsPDF();
-      
+
       // Header
       doc.setFontSize(20);
       doc.setTextColor(40, 40, 40);
       doc.text("Blax Football - Laporan Booking", 20, 30);
-      
+
       // Date range
       doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
       doc.text(`Periode: ${startDate} - ${endDate}`, 20, 45);
-      
+
       // Summary section
       doc.setFontSize(14);
       doc.setTextColor(40, 40, 40);
       doc.text("Ringkasan", 20, 65);
-      
+
       const summaryData = [
         ["Total Booking", reportData.summary.totalBookings.toString()],
-        ["Total Pendapatan", `Rp ${reportData.summary.totalRevenue.toLocaleString("id-ID")}`],
+        [
+          "Total Pendapatan",
+          `Rp ${reportData.summary.totalRevenue.toLocaleString("id-ID")}`,
+        ],
         ["Total Pemain", reportData.summary.totalPlayers.toString()],
         ["Tingkat Hunian", `${reportData.summary.averageOccupancy}%`],
-        ["Pertandingan Selesai", reportData.summary.completedMatches.toString()],
+        [
+          "Pertandingan Selesai",
+          reportData.summary.completedMatches.toString(),
+        ],
         ["Booking Aktif", reportData.summary.activeBookings.toString()],
       ];
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: 75,
         head: [["Metrik", "Nilai"]],
         body: summaryData,
@@ -162,8 +169,11 @@ export default function ReportsTab() {
       });
 
       // Booking details
+      const lastY = doc.lastAutoTable?.finalY || 75;
+
       doc.setFontSize(14);
-      doc.text("Detail Booking", 20, (doc as any).lastAutoTable.finalY + 20);
+      doc.setTextColor(40, 40, 40);
+      doc.text("Detail Booking", 20, lastY + 20);
 
       const bookingData = reportData.bookings.map((booking) => [
         booking.date,
@@ -174,8 +184,8 @@ export default function ReportsTab() {
         booking.status,
       ]);
 
-      (doc as any).autoTable({
-        startY: (doc as any).lastAutoTable.finalY + 30,
+      autoTable(doc, {
+        startY: lastY + 30,
         head: [["Tanggal", "Venue", "Tipe", "Pemain", "Pendapatan", "Status"]],
         body: bookingData,
         theme: "grid",
@@ -190,14 +200,19 @@ export default function ReportsTab() {
         doc.setFontSize(10);
         doc.setTextColor(150, 150, 150);
         doc.text(
-          `Generated on ${new Date().toLocaleDateString("id-ID")} - Page ${i} of ${pageCount}`,
+          `Generated on ${new Date().toLocaleDateString(
+            "id-ID"
+          )} - Page ${i} of ${pageCount}`,
           20,
           doc.internal.pageSize.height - 10
         );
       }
 
       doc.save(`blax-football-report-${startDate}-to-${endDate}.pdf`);
-      showSuccess("PDF Report Generated", "Report has been downloaded successfully");
+      showSuccess(
+        "PDF Report Generated",
+        "Report has been downloaded successfully"
+      );
     } catch (error) {
       console.error("Error generating PDF:", error);
       showError("Export Error", "Failed to generate PDF report");
@@ -269,9 +284,12 @@ export default function ReportsTab() {
       const data = new Blob([excelBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
-      
+
       saveAs(data, `blax-football-report-${startDate}-to-${endDate}.xlsx`);
-      showSuccess("Excel Report Generated", "Report has been downloaded successfully");
+      showSuccess(
+        "Excel Report Generated",
+        "Report has been downloaded successfully"
+      );
     } catch (error) {
       console.error("Error generating Excel:", error);
       showError("Export Error", "Failed to generate Excel report");
@@ -297,8 +315,8 @@ export default function ReportsTab() {
         startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    setStartDate(startDate.toISOString().split('T')[0]);
-    setEndDate(today.toISOString().split('T')[0]);
+    setStartDate(startDate.toISOString().split("T")[0]);
+    setEndDate(today.toISOString().split("T")[0]);
   };
 
   return (
@@ -320,7 +338,9 @@ export default function ReportsTab() {
             disabled={loading}
             className="flex items-center"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
 
@@ -415,7 +435,9 @@ export default function ReportsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Bookings
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
                   {reportData.summary.totalBookings}
                 </p>
@@ -435,7 +457,9 @@ export default function ReportsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Revenue
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
                   Rp {(reportData.summary.totalRevenue / 1000000).toFixed(1)}M
                 </p>
@@ -455,7 +479,9 @@ export default function ReportsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Players</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Players
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
                   {reportData.summary.totalPlayers}
                 </p>
@@ -475,7 +501,9 @@ export default function ReportsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Occupancy Rate</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Occupancy Rate
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
                   {reportData.summary.averageOccupancy}%
                 </p>
@@ -515,7 +543,9 @@ export default function ReportsTab() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Bookings</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Bookings
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
                   {reportData.summary.activeBookings}
                 </p>
@@ -566,20 +596,37 @@ export default function ReportsTab() {
           <CardContent>
             <div className="space-y-4">
               {[
-                { name: "Lapangan Futsal Central", bookings: 45, revenue: 15200000 },
-                { name: "GOR Senayan Mini Soccer", bookings: 38, revenue: 12800000 },
-                { name: "Futsal Arena Jakarta", bookings: 32, revenue: 10400000 },
+                {
+                  name: "Lapangan Futsal Central",
+                  bookings: 45,
+                  revenue: 15200000,
+                },
+                {
+                  name: "GOR Senayan Mini Soccer",
+                  bookings: 38,
+                  revenue: 12800000,
+                },
+                {
+                  name: "Futsal Arena Jakarta",
+                  bookings: 32,
+                  revenue: 10400000,
+                },
                 { name: "Mini Soccer Plaza", bookings: 28, revenue: 9200000 },
                 { name: "Football Center BSD", bookings: 24, revenue: 8000000 },
               ].map((venue, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                       {index + 1}
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{venue.name}</p>
-                      <p className="text-sm text-gray-500">{venue.bookings} bookings</p>
+                      <p className="text-sm text-gray-500">
+                        {venue.bookings} bookings
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
