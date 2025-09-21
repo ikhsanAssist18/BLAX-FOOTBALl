@@ -112,14 +112,18 @@ const mockBookingHistory: BookingHistory[] = [
 
 export default function BookingHistoryTab() {
   const [bookings, setBookings] = useState<BookingHistory[]>([]);
-  const [filteredBookings, setFilteredBookings] = useState<BookingHistory[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<BookingHistory[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
+    null
+  );
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Pagination state
@@ -136,7 +140,13 @@ export default function BookingHistoryTab() {
 
   useEffect(() => {
     fetchBookingHistory();
-  }, [paginationData.currentPage, searchTerm, statusFilter, paymentFilter, dateFilter]);
+  }, [
+    paginationData.currentPage,
+    searchTerm,
+    statusFilter,
+    paymentFilter,
+    dateFilter,
+  ]);
 
   useEffect(() => {
     filterBookings();
@@ -145,10 +155,10 @@ export default function BookingHistoryTab() {
   const fetchBookingHistory = async () => {
     try {
       setLoading(true);
-      
+
       // Simulate API call with pagination
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       // In real implementation, this would be an API call
       // const response = await bookingService.getBookingHistory({
       //   page: paginationData.currentPage,
@@ -162,16 +172,15 @@ export default function BookingHistoryTab() {
       // Mock response with pagination
       const totalItems = mockBookingHistory.length;
       const totalPages = Math.ceil(totalItems / paginationData.itemsPerPage);
-      
+
       setBookings(mockBookingHistory);
-      setPaginationData(prev => ({
+      setPaginationData((prev) => ({
         ...prev,
         totalItems,
         totalPages,
         hasNextPage: prev.currentPage < totalPages,
         hasPreviousPage: prev.currentPage > 1,
       }));
-      
     } catch (error) {
       console.error("Error fetching booking history:", error);
       showError("Error", "Failed to load booking history");
@@ -187,7 +196,9 @@ export default function BookingHistoryTab() {
     if (searchTerm) {
       filtered = filtered.filter(
         (booking) =>
-          booking.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          booking.customerName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           booking.bookingId.toLowerCase().includes(searchTerm.toLowerCase()) ||
           booking.customerPhone.includes(searchTerm) ||
           booking.venue.toLowerCase().includes(searchTerm.toLowerCase())
@@ -196,19 +207,23 @@ export default function BookingHistoryTab() {
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter((booking) => booking.bookingStatus === statusFilter);
+      filtered = filtered.filter(
+        (booking) => booking.bookingStatus === statusFilter
+      );
     }
 
     // Payment filter
     if (paymentFilter !== "all") {
-      filtered = filtered.filter((booking) => booking.paymentStatus === paymentFilter);
+      filtered = filtered.filter(
+        (booking) => booking.paymentStatus === paymentFilter
+      );
     }
 
     // Date filter
     if (dateFilter !== "all") {
       const now = new Date();
       const filterDate = new Date();
-      
+
       switch (dateFilter) {
         case "today":
           filterDate.setHours(0, 0, 0, 0);
@@ -242,7 +257,7 @@ export default function BookingHistoryTab() {
   };
 
   const handlePageChange = (page: number) => {
-    setPaginationData(prev => ({ ...prev, currentPage: page }));
+    setPaginationData((prev) => ({ ...prev, currentPage: page }));
   };
 
   const handleViewDetail = (bookingId: string) => {
@@ -316,8 +331,10 @@ export default function BookingHistoryTab() {
   // Calculate stats
   const stats = {
     total: filteredBookings.length,
-    confirmed: filteredBookings.filter((b) => b.bookingStatus === "CONFIRMED").length,
-    pending: filteredBookings.filter((b) => b.bookingStatus === "PENDING").length,
+    confirmed: filteredBookings.filter((b) => b.bookingStatus === "CONFIRMED")
+      .length,
+    pending: filteredBookings.filter((b) => b.bookingStatus === "PENDING")
+      .length,
     totalRevenue: filteredBookings
       .filter((b) => b.paymentStatus === "PAID")
       .reduce((sum, b) => sum + b.totalAmount, 0),
@@ -333,7 +350,9 @@ export default function BookingHistoryTab() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Booking History</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Booking History
+            </h2>
             <p className="text-gray-600 mt-1">
               Comprehensive view of all booking transactions
             </p>
@@ -347,14 +366,12 @@ export default function BookingHistoryTab() {
               disabled={refreshing}
               className="flex items-center"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex items-center"
-            >
+            <Button variant="black" size="sm" className="flex items-center">
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>
@@ -365,10 +382,14 @@ export default function BookingHistoryTab() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-blue-200 bg-blue-50/50">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600">Total Bookings</p>
-                  <p className="text-3xl font-bold text-blue-900">{stats.total}</p>
+                  <p className="text-sm font-medium text-blue-600">
+                    Total Bookings
+                  </p>
+                  <p className="text-3xl font-bold text-blue-900">
+                    {stats.total}
+                  </p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Calendar className="w-6 h-6 text-blue-600" />
@@ -379,10 +400,14 @@ export default function BookingHistoryTab() {
 
           <Card className="border-green-200 bg-green-50/50">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600">Confirmed</p>
-                  <p className="text-3xl font-bold text-green-900">{stats.confirmed}</p>
+                  <p className="text-sm font-medium text-green-600">
+                    Confirmed
+                  </p>
+                  <p className="text-3xl font-bold text-green-900">
+                    {stats.confirmed}
+                  </p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
                   <CheckCircle className="w-6 h-6 text-green-600" />
@@ -393,10 +418,12 @@ export default function BookingHistoryTab() {
 
           <Card className="border-yellow-200 bg-yellow-50/50">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-yellow-600">Pending</p>
-                  <p className="text-3xl font-bold text-yellow-900">{stats.pending}</p>
+                  <p className="text-3xl font-bold text-yellow-900">
+                    {stats.pending}
+                  </p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-lg">
                   <Clock className="w-6 h-6 text-yellow-600" />
@@ -407,9 +434,11 @@ export default function BookingHistoryTab() {
 
           <Card className="border-emerald-200 bg-emerald-50/50">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-emerald-600">Revenue</p>
+                  <p className="text-sm font-medium text-emerald-600">
+                    Revenue
+                  </p>
                   <p className="text-3xl font-bold text-emerald-900">
                     {formatCurrency(stats.totalRevenue)}
                   </p>
@@ -425,7 +454,7 @@ export default function BookingHistoryTab() {
         {/* Filters */}
         <Card className="border-gray-200">
           <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
+            <div className="pt-4 flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
@@ -476,7 +505,10 @@ export default function BookingHistoryTab() {
             </div>
 
             {/* Active Filters */}
-            {(searchTerm || statusFilter !== "all" || paymentFilter !== "all" || dateFilter !== "all") && (
+            {(searchTerm ||
+              statusFilter !== "all" ||
+              paymentFilter !== "all" ||
+              dateFilter !== "all") && (
               <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
                 <p className="text-sm text-gray-600 mr-2">Active filters:</p>
                 {searchTerm && (
@@ -538,7 +570,10 @@ export default function BookingHistoryTab() {
                   No bookings found
                 </h3>
                 <p className="text-gray-600">
-                  {searchTerm || statusFilter !== "all" || paymentFilter !== "all" || dateFilter !== "all"
+                  {searchTerm ||
+                  statusFilter !== "all" ||
+                  paymentFilter !== "all" ||
+                  dateFilter !== "all"
                     ? "Try adjusting your search criteria"
                     : "No booking history available"}
                 </p>
@@ -548,20 +583,41 @@ export default function BookingHistoryTab() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-900">Booking ID</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Customer</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Schedule</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Type</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Amount</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Payment</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Date</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Booking ID
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Customer
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Schedule
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Type
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Amount
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Payment
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Status
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Date
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredBookings.map((booking) => (
-                      <TableRow key={booking.id} className="hover:bg-gray-50/50">
+                      <TableRow
+                        key={booking.id}
+                        className="hover:bg-gray-50/50"
+                      >
                         <TableCell>
                           <div className="font-mono text-sm font-medium text-blue-600">
                             {booking.bookingId}
@@ -638,11 +694,14 @@ export default function BookingHistoryTab() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm text-gray-600">
-                            {new Date(booking.createdAt).toLocaleDateString("id-ID", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
+                            {new Date(booking.createdAt).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
