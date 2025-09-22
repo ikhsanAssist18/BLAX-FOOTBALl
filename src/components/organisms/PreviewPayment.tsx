@@ -16,6 +16,7 @@ interface PaymentReviewProps {
 interface PaymentData {
   customerName: string;
   customerPhone: string;
+  bookId: string;
   amount: number;
   qrisImageBase64: string; // Base64 string from backend
 }
@@ -46,6 +47,7 @@ export default function PaymentReview({
           customerName: result.name,
           customerPhone: result.phone,
           amount: result.total,
+          bookId: result.bookId,
           qrisImageBase64: result.imageBase64,
         });
       } else if (result.status === "expire") {
@@ -90,9 +92,11 @@ export default function PaymentReview({
     }
   };
 
-  const copyPaymentId = () => {
-    navigator.clipboard.writeText(paymentId);
-    showSuccess("Copied", "Payment ID copied to clipboard");
+  const copyBookId = () => {
+    if (paymentData?.bookId) {
+      navigator.clipboard.writeText(paymentData.bookId);
+      showSuccess("Copied", "Book ID copied to clipboard");
+    }
   };
 
   console.log("paymentData", paymentData);
@@ -170,8 +174,37 @@ export default function PaymentReview({
       <div className="text-center mb-6">
         <div className="flex items-center justify-center mb-4">
           <QrCode className="h-8 w-8 text-blue-600 mr-2" />
-          <h2 className="text-2xl font-bold text-gray-900">Payment Review</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Payment Review - {paymentData.bookId}
+          </h2>
         </div>
+      </div>
+
+      {/* Book ID Box */}
+      <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+        <h4 className="font-semibold text-yellow-800 mb-3 flex items-center">
+          📋 Booking ID
+        </h4>
+        <div className="flex items-center justify-between bg-white p-3 rounded border border-yellow-300">
+          <div className="flex-1">
+            <span className="text-lg font-mono font-bold text-gray-800">
+              {paymentData.bookId}
+            </span>
+          </div>
+          <button
+            onClick={copyBookId}
+            className="ml-3 flex items-center gap-2 px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 hover:text-yellow-800 rounded-md transition-colors font-medium"
+            title="Copy Book ID"
+          >
+            <Copy className="h-4 w-4" />
+            Copy
+          </button>
+        </div>
+        <p className="text-sm text-yellow-700 mt-3 leading-relaxed">
+          <strong>📝 Penting:</strong> Simpan booking ID anda sebagai bukti
+          pembayaran atau jika pembayaran gagal bisa berikan booking ID kepada
+          admin untuk proses lebih lanjut.
+        </p>
       </div>
 
       {/* Payment Details */}
