@@ -20,9 +20,14 @@ export default function DashboardPage() {
     if (!user) {
       router.push("/");
       return;
+    }
+
+    // Redirect players to their specific dashboard
+    if (user.role === "player") {
+      router.push("/player-dashboard");
+      return;
     } else {
       setLoading(false);
-      router.push("/dashboard");
     }
   };
 

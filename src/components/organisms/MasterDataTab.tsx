@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { MapPin, FileText } from "lucide-react";
+import { MapPin, FileText, Gift, Settings } from "lucide-react";
 import VenueManagement from "./VenueManagement";
 import RuleManagement from "./RuleManagement";
+import VoucherManagement from "./VoucherManagement";
+import FacilityManagement from "./FacilityManagement";
 
-// Sub-tabs for Venues and Rules
+// Sub-tabs for Master Data
 function SubTabs({ value, onValueChange, className, children }: any) {
   return <div className={className}>{children}</div>;
 }
@@ -22,7 +24,7 @@ function SubTabsTrigger({ value, children, onClick, isActive }: any) {
   return (
     <button
       onClick={() => onClick(value)}
-      className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
+      className={`flex-1 px-3 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
         isActive
           ? "bg-white text-blue-600 shadow-sm transform scale-[1.02]"
           : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -47,7 +49,7 @@ function SubTabsContent({ value, activeTab, children, className }: any) {
   );
 }
 
-export default function VenuesAndRulesTab() {
+export default function MasterDataTab() {
   const [selectedSubTab, setSelectedSubTab] = useState("venues");
 
   return (
@@ -55,10 +57,10 @@ export default function VenuesAndRulesTab() {
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Manajemen Venue & Aturan
+          Master Data Management
         </h2>
         <p className="text-gray-600">
-          Kelola data venue dan aturan pertandingan
+          Kelola data master venue, aturan, voucher, dan fasilitas
         </p>
       </div>
 
@@ -68,14 +70,14 @@ export default function VenuesAndRulesTab() {
         onValueChange={setSelectedSubTab}
         className="space-y-6"
       >
-        <SubTabsList className="max-w-md mx-auto">
+        <SubTabsList className="max-w-2xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-1">
           <SubTabsTrigger
             value="venues"
             onClick={setSelectedSubTab}
             isActive={selectedSubTab === "venues"}
           >
             <MapPin className="w-4 h-4 mr-2" />
-            Venue
+            <span className="hidden sm:inline">Venue</span>
           </SubTabsTrigger>
           <SubTabsTrigger
             value="rules"
@@ -83,7 +85,23 @@ export default function VenuesAndRulesTab() {
             isActive={selectedSubTab === "rules"}
           >
             <FileText className="w-4 h-4 mr-2" />
-            Aturan
+            <span className="hidden sm:inline">Rules</span>
+          </SubTabsTrigger>
+          <SubTabsTrigger
+            value="vouchers"
+            onClick={setSelectedSubTab}
+            isActive={selectedSubTab === "vouchers"}
+          >
+            <Gift className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Vouchers</span>
+          </SubTabsTrigger>
+          <SubTabsTrigger
+            value="facilities"
+            onClick={setSelectedSubTab}
+            isActive={selectedSubTab === "facilities"}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Facilities</span>
           </SubTabsTrigger>
         </SubTabsList>
 
@@ -103,6 +121,24 @@ export default function VenuesAndRulesTab() {
           className="space-y-6"
         >
           <RuleManagement />
+        </SubTabsContent>
+
+        {/* Vouchers Tab */}
+        <SubTabsContent
+          value="vouchers"
+          activeTab={selectedSubTab}
+          className="space-y-6"
+        >
+          <VoucherManagement />
+        </SubTabsContent>
+
+        {/* Facilities Tab */}
+        <SubTabsContent
+          value="facilities"
+          activeTab={selectedSubTab}
+          className="space-y-6"
+        >
+          <FacilityManagement />
         </SubTabsContent>
       </SubTabs>
 

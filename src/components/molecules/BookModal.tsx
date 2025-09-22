@@ -155,9 +155,9 @@ export default function BookModal({
         setPaymentId(response);
         // Close confirmation modal first
         setShowConfirmation(false);
-        // Then show payment review after a small delay to ensure modal state is updated
+        // Redirect to payment page instead of showing modal
         setTimeout(() => {
-          setShowPayment(true);
+          window.location.href = `/payment/${response}`;
         }, 100);
         showSuccess("Booking berhasil! Silakan lakukan pembayaran.");
       } else {
@@ -180,9 +180,8 @@ export default function BookModal({
 
   // Handle closing payment review
   const handleClosePayment = () => {
-    setShowPayment(false);
-    setPaymentId(null);
-    onClose(); // Close the main modal
+    // This function is no longer needed since we redirect to payment page
+    onClose();
   };
 
   // Generate confirmation message
@@ -227,20 +226,6 @@ export default function BookModal({
   }, [isOpen, onClose, showConfirmation, showPayment]);
 
   if (!isOpen || !schedule) return null;
-
-  // Render PaymentReview as separate modal if showPayment is true
-  if (showPayment && paymentId) {
-    return (
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
-        <div className="flex min-h-full items-center justify-center p-4">
-          <div className="relative w-full max-w-2xl">
-            <PaymentReview paymentId={paymentId} onClose={handleClosePayment} />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

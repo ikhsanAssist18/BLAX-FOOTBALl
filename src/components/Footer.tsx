@@ -91,6 +91,14 @@ export default function Footer() {
               </li>
               <li>
                 <a
+                  href="/gallery"
+                  className="text-gray-300 hover:text-sky-400 transition-colors duration-200"
+                >
+                  Gallery
+                </a>
+              </li>
+              <li>
+                <a
                   href="/user-profile"
                   className="text-gray-300 hover:text-sky-400 transition-colors duration-200"
                 >

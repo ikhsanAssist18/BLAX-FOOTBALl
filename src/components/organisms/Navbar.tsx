@@ -219,6 +219,15 @@ export default function Navbar({ useScrollEffect = false }: NavbarProps) {
                   className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
                 ></span>
               </Link>
+              <Link
+                href="/gallery"
+                className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
+              >
+                Gallery
+                <span
+                  className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
+                ></span>
+              </Link>
               {user && (
                 <Link
                   href="/dashboard"
@@ -231,6 +240,13 @@ export default function Navbar({ useScrollEffect = false }: NavbarProps) {
                 </Link>
               )}
               {user &&
+                <Link
+                  href="/gallery"
+                  className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${getMobileTextStyles()}`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Gallery
+                </Link>
                 (user.role === "Admin" || user.role === "superadmin") && (
                   <Link
                     href="/admin"

@@ -20,7 +20,7 @@ import NewsTab from "@/components/organisms/NewsTabComponent";
 import VenueManagement from "@/components/organisms/VenueManagement";
 import RuleManagement from "@/components/organisms/RuleManagement";
 import FacilityManagement from "@/components/organisms/FacilityManagement";
-import VenuesAndRulesTab from "@/components/organisms/VenuesAndRulesTab";
+import MasterDataTab from "@/components/organisms/MasterDataTab";
 import ReportsTab from "@/components/organisms/ReportsTab";
 import SettingsTab from "@/components/organisms/SettingsTab";
 import BookingHistoryTab from "@/components/organisms/BookingHistoryTab";
@@ -348,30 +348,12 @@ export default function AdminPage() {
             value="venues-rules"
             activeTab={selectedTab}
             className="space-y-6 transition-all duration-300 ease-in-out"
-          >
-            <VenuesAndRulesTab />
-          </TabsContent>
-
-          {/* Facilities Tab */}
-          <TabsContent
-            value="facilities"
-            activeTab={selectedTab}
-            className="space-y-6 transition-all duration-300 ease-in-out"
-          >
-            <FacilityManagement />
+            <MasterDataTab />
           </TabsContent>
 
           {/* Reports Tab */}
           <TabsContent
             value="reports"
-            activeTab={selectedTab}
-            className="space-y-6 transition-all duration-300 ease-in-out"
-          >
-            <ReportsTab />
-          </TabsContent>
-
-          {/* Settings Tab - Placeholder */}
-          <TabsContent
             value="settings"
             activeTab={selectedTab}
             className="space-y-6 transition-all duration-300 ease-in-out"
