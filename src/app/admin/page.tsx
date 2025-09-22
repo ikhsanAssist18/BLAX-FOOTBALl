@@ -20,7 +20,7 @@ import NewsTab from "@/components/organisms/NewsTabComponent";
 import VenueManagement from "@/components/organisms/VenueManagement";
 import RuleManagement from "@/components/organisms/RuleManagement";
 import FacilityManagement from "@/components/organisms/FacilityManagement";
-import VenuesAndRulesTab from "@/components/organisms/VenuesAndRulesTab";
+import MasterDataTab from "@/components/organisms/MasterDataTab";
 import ReportsTab from "@/components/organisms/ReportsTab";
 import SettingsTab from "@/components/organisms/SettingsTab";
 import BookingHistoryTab from "@/components/organisms/BookingHistoryTab";
