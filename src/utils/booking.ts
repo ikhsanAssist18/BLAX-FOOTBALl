@@ -1,6 +1,7 @@
 import { encryptWithPublicKey } from "@/lib/helper";
 import { bookingRequest } from "@/types/booking";
 import { AuthService } from "./auth";
+import { apiClient } from "./api";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/booking`;
 
@@ -55,6 +56,11 @@ class BookingService {
     }
 
     return result.data;
+  }
+
+  async bookingHistoryUser() {
+    const response = await apiClient.get(`/api/v1/booking/history/user`);
+    return response.data;
   }
 }
 
