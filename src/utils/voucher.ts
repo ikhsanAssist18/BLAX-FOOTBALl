@@ -73,6 +73,11 @@ class VoucherService {
     });
     return response.data;
   }
+
+  async voucherUser(): Promise<UserVoucher[]> {
+    const response = await apiClient.get("/api/v1/vouchers/voucher-user");
+    return response.data;
+  }
 }
 
 export const voucherService = new VoucherService();

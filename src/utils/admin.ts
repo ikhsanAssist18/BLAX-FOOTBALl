@@ -1,6 +1,6 @@
 import { ScheduleOverview } from "@/types/schedule";
 import { apiClient } from "./api";
-import { UserManagement } from "@/types/admin";
+import { Roles, UserManagement } from "@/types/admin";
 import { News } from "@/types/news";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/auth`;
@@ -86,6 +86,16 @@ class AdminService {
       return result.data;
     } catch (error) {
       return null;
+    }
+  }
+
+  async getRoles(): Promise<Roles[]> {
+    try {
+      const response = await apiClient.get(`/api/v1/roles/getRoles`);
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      return [];
     }
   }
 }

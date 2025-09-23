@@ -74,8 +74,9 @@ export default function AdminPage() {
   const checkAdminAccess = async () => {
     try {
       const adminStatus = await AuthService.getSession();
+      console.log("user", user?.role);
 
-      if (!adminStatus.isAdmin) {
+      if (user?.role !== "Admin" && !adminStatus.isAdmin) {
         showError("Access Denied", "You don't have admin privileges");
         router.push("/b/auth/login");
         return;

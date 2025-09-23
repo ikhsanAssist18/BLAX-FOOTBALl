@@ -50,3 +50,8 @@ export interface AdminStats {
   verificationsToday: number;
   flaggedContent: number;
 }
+
+export interface Roles {
+  id: string;
+  name: string;
+}

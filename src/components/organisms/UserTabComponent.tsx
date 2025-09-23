@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/atoms/Table";
 import Badge from "@/components/atoms/Badge";
-import { UserManagement } from "@/types/admin";
+import { UserManagement, Roles } from "@/types/admin";
 import { adminService } from "@/utils/admin";
 import { useNotifications } from "@/components/organisms/NotificationContainer";
 import { Loader2 } from "lucide-react";
@@ -93,8 +93,10 @@ const StatsSkeleton = () => (
 
 export default function UsersTab() {
   const [users, setUsers] = useState<UserManagement[]>([]);
+  const [roles, setRoles] = useState<Roles[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserManagement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -106,7 +108,6 @@ export default function UsersTab() {
   const [editingUser, setEditingUser] = useState<UserManagement | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserManagement | null>(null);
-  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const { showSuccess, showError } = useNotifications();
 
@@ -115,7 +116,7 @@ export default function UsersTab() {
     name: "",
     email: "",
     phone: "",
-    role: "user",
+    role: "",
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -138,6 +139,24 @@ export default function UsersTab() {
       showError("Error", "Failed to load users");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      setRolesLoading(true);
+      const rolesData = await adminService.getRoles();
+      setRoles(rolesData);
+
+      // Set default role if no roles exist yet and roles are loaded
+      if (rolesData.length > 0 && !userForm.role && !editingUser) {
+        setUserForm((prev) => ({ ...prev, role: rolesData[0].id }));
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      showError("Error", "Failed to load roles");
+    } finally {
+      setRolesLoading(false);
     }
   };
 
@@ -191,6 +210,7 @@ export default function UsersTab() {
     else if (!/^\d{10,15}$/.test(userForm.phone.replace(/\D/g, ""))) {
       errors.phone = "Phone number must be 10-15 digits";
     }
+    if (!userForm.role.trim()) errors.role = "Role is required";
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -234,7 +254,7 @@ export default function UsersTab() {
       name: "",
       email: "",
       phone: "",
-      role: "user",
+      role: roles.length > 0 ? roles[0].id : "",
     });
     setFormErrors({});
     setEditingUser(null);
@@ -277,35 +297,25 @@ export default function UsersTab() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    try {
-      setActionLoading("bulk-delete");
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      showSuccess(`${selectedUsers.length} users deleted successfully!`);
-      setShowBulkDeleteConfirm(false);
-      setSelectedUsers([]);
-      fetchUsers();
-    } catch (error) {
-      showError("Error", "Failed to delete users");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleSelectUser = (phone: string) => {
-    setSelectedUsers((prev) =>
-      prev.includes(phone) ? prev.filter((p) => p !== phone) : [...prev, phone]
-    );
-  };
-
   const handleSelectAll = () => {
     if (selectedUsers.length === paginatedUsers.length) {
       setSelectedUsers([]);
     } else {
       setSelectedUsers(paginatedUsers.map((u) => u.phone));
     }
+  };
+
+  const handleOpenUserDialog = () => {
+    setShowUserDialog(true);
+    if (roles.length === 0) {
+      fetchRoles();
+    }
+  };
+
+  // Helper function to get role name by ID
+  const getRoleName = (roleId: string) => {
+    const role = roles.find((r) => r.id === roleId);
+    return role ? role.name : roleId;
   };
 
   // Get unique roles for filter
@@ -351,25 +361,10 @@ export default function UsersTab() {
         </div>
 
         <div className="flex items-center space-x-2 md:space-x-3">
-          {selectedUsers.length > 0 && (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setShowBulkDeleteConfirm(true)}
-              className="flex items-center"
-            >
-              <Trash2 className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
-              <span className="hidden md:inline">
-                Hapus ({selectedUsers.length})
-              </span>
-              <span className="md:hidden">({selectedUsers.length})</span>
-            </Button>
-          )}
-
           <Button
             variant="black"
             size="sm"
-            onClick={() => setShowUserDialog(true)}
+            onClick={handleOpenUserDialog}
             className="flex items-center"
           >
             <UserPlus className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
@@ -474,7 +469,7 @@ export default function UsersTab() {
                 <option value="all">All Roles</option>
                 {uniqueRoles.map((role) => (
                   <option key={role} value={role}>
-                    {role}
+                    {getRoleName(role)}
                   </option>
                 ))}
               </select>
@@ -508,7 +503,7 @@ export default function UsersTab() {
               )}
               {roleFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  Role: {roleFilter}
+                  Role: {getRoleName(roleFilter)}
                   <button
                     onClick={() => setRoleFilter("all")}
                     className="ml-1 hover:text-blue-600"
@@ -540,21 +535,6 @@ export default function UsersTab() {
           {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of{" "}
           {filteredUsers.length} users
         </p>
-
-        {filteredUsers.length > 0 && (
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={
-                selectedUsers.length === paginatedUsers.length &&
-                paginatedUsers.length > 0
-              }
-              onChange={handleSelectAll}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-600">Select all</span>
-          </div>
-        )}
       </div>
 
       {/* Users List */}
@@ -576,7 +556,7 @@ export default function UsersTab() {
                 statusFilter === "all" && (
                   <Button
                     variant="primary"
-                    onClick={() => setShowUserDialog(true)}
+                    onClick={handleOpenUserDialog}
                     className="flex items-center mx-auto"
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
@@ -588,17 +568,6 @@ export default function UsersTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedUsers.length === paginatedUsers.length &&
-                        paginatedUsers.length > 0
-                      }
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Role</TableHead>
@@ -611,14 +580,6 @@ export default function UsersTab() {
               <TableBody>
                 {paginatedUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.phone)}
-                        onChange={() => handleSelectUser(user.phone)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
@@ -654,7 +615,7 @@ export default function UsersTab() {
                             : "bg-gray-100 text-gray-800 border-gray-200"
                         }
                       >
-                        {user.role}
+                        {getRoleName(user.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -814,18 +775,37 @@ export default function UsersTab() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Role</label>
-                <select
-                  value={userForm.role}
-                  onChange={(e) =>
-                    handleUserInputChange("role", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                  <option value="moderator">Moderator</option>
-                </select>
+                <label className="block text-sm font-medium mb-2">Role *</label>
+                <div className="relative">
+                  <select
+                    value={userForm.role}
+                    onChange={(e) =>
+                      handleUserInputChange("role", e.target.value)
+                    }
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      formErrors.role ? "border-red-500" : "border-gray-300"
+                    } ${rolesLoading ? "bg-gray-50" : ""}`}
+                    disabled={rolesLoading}
+                  >
+                    <option value="">Select a role</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </select>
+                  {rolesLoading && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                {formErrors.role && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.role}</p>
+                )}
+                {rolesLoading && (
+                  <p className="text-gray-500 text-sm mt-1">Loading roles...</p>
+                )}
               </div>
             </div>
 
@@ -845,7 +825,7 @@ export default function UsersTab() {
                 variant="black"
                 size="sm"
                 onClick={handleSaveUser}
-                disabled={actionLoading === "save"}
+                disabled={actionLoading === "save" || rolesLoading}
                 className="flex items-center"
               >
                 {actionLoading === "save" ? (
@@ -878,19 +858,6 @@ export default function UsersTab() {
         confirmText="Delete"
         cancelText="Cancel"
         isLoading={actionLoading === "delete"}
-      />
-
-      {/* Bulk Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showBulkDeleteConfirm}
-        onClose={() => setShowBulkDeleteConfirm(false)}
-        onConfirm={handleBulkDelete}
-        title="Delete Multiple Users"
-        message={`Are you sure you want to delete ${selectedUsers.length} selected users? This action cannot be undone.`}
-        type="danger"
-        confirmText="Delete All"
-        cancelText="Cancel"
-        isLoading={actionLoading === "bulk-delete"}
       />
     </div>
   );

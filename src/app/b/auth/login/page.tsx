@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -32,7 +32,13 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const { showSuccess, showError } = useNotifications();
-  const { setUser } = useAuth();
+  const { user, setUser } = useAuth();
+
+  useEffect(() => {
+    if (user && user.role === "Admin") {
+      router.push("/admin");
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +63,7 @@ export default function AdminLogin() {
         const dataUser = await AuthService.getCurrentUser(
           response.data.accessToken
         );
+
         setUser(dataUser);
         setSuccess("Success Login!");
         showSuccess("Success Login!");

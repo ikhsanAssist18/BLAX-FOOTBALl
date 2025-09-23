@@ -32,8 +32,14 @@ import { voucherService } from "@/utils/voucher";
 import { formatCurrency, formatDate } from "@/lib/helper";
 import LoadingScreen from "@/components/atoms/LoadingScreen";
 import Navbar from "@/components/organisms/Navbar";
-import { UserVoucher } from "@/types/voucher";
 import { bookingService } from "@/utils/booking";
+
+// Updated UserVoucher interface to match the API response
+export interface UserVoucher {
+  name: string;
+  code: string;
+  description: string;
+}
 
 // Skeleton Components
 const StatsCardSkeleton = () => (
@@ -197,7 +203,7 @@ export default function PlayerDashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(false); // New state for data loading
+  const [dataLoading, setDataLoading] = useState(false);
   const [userVouchers, setUserVouchers] = useState<UserVoucher[]>([]);
   const [bookingHistory, setBookingHistory] = useState<BookingHistory[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -226,11 +232,11 @@ export default function PlayerDashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      setDataLoading(true); // Set data loading to true
+      setDataLoading(true);
 
-      // Fetch user vouchers
-      // const vouchersResult = await voucherService.getUserVouchers();
-      // setUserVouchers(vouchersResult);
+      // Fetch user vouchers using the correct service method
+      const vouchersResult = await voucherService.voucherUser();
+      setUserVouchers(vouchersResult);
 
       // Fetch booking history from API
       const bookingsResult = await bookingService.bookingHistoryUser();
@@ -239,7 +245,7 @@ export default function PlayerDashboardPage() {
       console.error("Error fetching dashboard data:", error);
       showError("Error", "Failed to load dashboard data");
     } finally {
-      setDataLoading(false); // Set data loading to false
+      setDataLoading(false);
     }
   };
 
@@ -284,24 +290,10 @@ export default function PlayerDashboardPage() {
     }
   };
 
-  const getVoucherStatus = (voucher: UserVoucher) => {
-    if (voucher.usedAt)
-      return { status: "used", color: "bg-gray-100 text-gray-800" };
-
-    const now = new Date();
-    const validUntil = new Date(voucher.voucher.validUntil);
-
-    if (validUntil < now)
-      return { status: "expired", color: "bg-red-100 text-red-800" };
-    return { status: "available", color: "bg-green-100 text-green-800" };
-  };
-
-  // Stats calculation
+  // Stats calculation - updated to work with simplified UserVoucher interface
   const stats = {
     totalBookings: bookingHistory.length,
-    availableVouchers: userVouchers.filter(
-      (v) => !v.usedAt && new Date(v.voucher.validUntil) > new Date()
-    ).length,
+    availableVouchers: userVouchers.length, // All vouchers from voucherUser are considered available
     successfulPayments: bookingHistory.filter(
       (b) => b.statusPayment === "PAID" || b.statusPayment === "SUCCESS"
     ).length,
@@ -471,53 +463,32 @@ export default function PlayerDashboardPage() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {userVouchers.slice(0, 3).map((userVoucher) => {
-                          const status = getVoucherStatus(userVoucher);
-                          const voucher = userVoucher.voucher;
-
-                          return (
-                            <div
-                              key={userVoucher.id}
-                              className="p-4 border border-green-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-semibold text-green-800">
-                                  {voucher.name}
-                                </h4>
-                                <Badge className={status.color}>
-                                  {status.status}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-green-700 mb-2">
-                                {voucher.description}
-                              </p>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-lg font-bold text-green-800">
-                                    {voucher.discountType === "PERCENTAGE"
-                                      ? `${voucher.discountValue}%`
-                                      : formatCurrency(voucher.discountValue)}
-                                  </p>
-                                  <p className="text-xs text-green-600">
-                                    Min: {formatCurrency(voucher.minPurchase)}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-xs text-green-600">Code</p>
-                                  <p className="font-mono text-sm font-bold text-green-800">
-                                    {voucher.code}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-xs text-green-600 mt-2">
-                                Valid until:{" "}
-                                {new Date(
-                                  voucher.validUntil
-                                ).toLocaleDateString("id-ID")}
+                        {userVouchers.slice(0, 3).map((voucher, index) => (
+                          <div
+                            key={`${voucher.code}-${index}`}
+                            className="p-4 border border-green-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold text-green-800">
+                                {voucher.name}
+                              </h4>
+                              <Badge className="bg-green-100 text-green-800">
+                                Available
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-green-700 mb-2">
+                              {voucher.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="text-right">
+                                <p className="text-xs text-green-600">Code</p>
+                                <p className="font-mono text-sm font-bold text-green-800">
+                                  {voucher.code}
+                                </p>
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                         {userVouchers.length > 3 && (
                           <div className="text-center pt-2">
                             <p className="text-sm text-green-600">

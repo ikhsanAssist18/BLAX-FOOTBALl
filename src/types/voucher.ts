@@ -30,10 +30,16 @@ export interface VoucherPayload {
   isActive: boolean;
 }
 
+// export interface UserVoucher {
+//   id: string;
+//   userId: string;
+//   voucherId: string;
+//   usedAt?: string;
+//   voucher: Voucher;
+// }
+
 export interface UserVoucher {
-  id: string;
-  userId: string;
-  voucherId: string;
-  usedAt?: string;
-  voucher: Voucher;
+  name: string;
+  code: string;
+  description: string;
 }
