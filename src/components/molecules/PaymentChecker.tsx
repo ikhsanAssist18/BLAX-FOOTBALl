@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, CreditCard, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
+import {
+  Search,
+  CreditCard,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  XCircle,
+} from "lucide-react";
 import Button from "../atoms/Button";
 import Input from "../atoms/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../atoms/Card";
@@ -15,14 +22,16 @@ import { useRouter } from "next/navigation";
 export default function PaymentChecker() {
   const [bookingId, setBookingId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(
+    null
+  );
   const [error, setError] = useState("");
   const { showSuccess, showError } = useNotifications();
   const router = useRouter();
 
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!bookingId.trim()) {
       setError("Please enter a booking ID");
       return;
@@ -33,55 +42,34 @@ export default function PaymentChecker() {
     setPaymentStatus(null);
 
     try {
-      const response = await paymentService.checkPaymentStatus(bookingId.trim());
-      
-      if (response.success && response.data) {
-        setPaymentStatus(response.data);
+      const response = await paymentService.checkPaymentStatus(
+        bookingId.trim()
+      );
+      console.log("response", response);
+
+      if (response.data.status) {
+        setPaymentStatus(response.data.status);
         showSuccess("Payment status retrieved successfully");
+
+        // Auto-redirect to payment page
+        handleViewFullPayment(response.data.status.id);
       } else {
-        setError(response.error || "Booking ID not found");
-        showError("Not Found", response.error || "Booking ID not found");
+        setError("Booking ID not found");
+        showError("Booking ID not found");
       }
-    } catch (error) {
-      console.error("Error checking payment:", error);
+    } catch (error: any) {
+      // console.error("Error checking payment:", error);
       setError("Failed to check payment status. Please try again.");
-      showError("Error", "Failed to check payment status");
+      showError("Error", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "PAID":
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case "PENDING":
-        return <Clock className="w-5 h-5 text-yellow-500" />;
-      case "FAILED":
-      case "EXPIRED":
-        return <XCircle className="w-5 h-5 text-red-500" />;
-      default:
-        return <AlertCircle className="w-5 h-5 text-gray-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PAID":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "FAILED":
-      case "EXPIRED":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const handleViewFullPayment = () => {
-    if (paymentStatus) {
-      router.push(`/payment/${paymentStatus.id}`);
+  const handleViewFullPayment = (paymentId?: string) => {
+    const id = paymentId || paymentStatus?.id;
+    if (id) {
+      router.push(`/payment/${id}`);
     }
   };
 
@@ -142,82 +130,17 @@ export default function PaymentChecker() {
           </Button>
         </form>
 
-        {/* Payment Status Result */}
-        {paymentStatus && (
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Payment Details
-              </h3>
-              <Badge className={`flex items-center space-x-1 ${getStatusColor(paymentStatus.status)}`}>
-                {getStatusIcon(paymentStatus.status)}
-                <span>{paymentStatus.status}</span>
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Customer</p>
-                <p className="font-medium text-gray-900">{paymentStatus.customerName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Amount</p>
-                <p className="font-medium text-gray-900">{formatCurrency(paymentStatus.amount)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Schedule</p>
-                <p className="font-medium text-gray-900">{paymentStatus.scheduleName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Date & Time</p>
-                <p className="font-medium text-gray-900">
-                  {new Date(paymentStatus.date).toLocaleDateString("id-ID")} • {paymentStatus.time}
-                </p>
-              </div>
-            </div>
-
-            {paymentStatus.paidAt && (
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600">Paid At</p>
-                <p className="font-medium text-green-600">
-                  {new Date(paymentStatus.paidAt).toLocaleString("id-ID")}
-                </p>
-              </div>
-            )}
-
-            {paymentStatus.status === "PENDING" && paymentStatus.expiresAt && (
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600">Expires At</p>
-                <p className="font-medium text-yellow-600">
-                  {new Date(paymentStatus.expiresAt).toLocaleString("id-ID")}
-                </p>
-              </div>
-            )}
-
-            <div className="flex space-x-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={handleViewFullPayment}
-                className="flex-1"
-              >
-                View Full Details
-              </Button>
-              {paymentStatus.status === "PENDING" && (
-                <Button
-                  variant="primary"
-                  onClick={handleViewFullPayment}
-                  className="flex-1"
-                >
-                  Complete Payment
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Help Text */}
         <div className="text-center text-sm text-gray-500">
-          <p>Don't have a booking ID? <a href="/schedule" className="text-blue-600 hover:text-blue-700 font-medium">Create a new booking</a></p>
+          <p>
+            Don't have a booking ID?{" "}
+            <a
+              href="/schedule"
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Create a new booking
+            </a>
+          </p>
         </div>
       </CardContent>
     </Card>

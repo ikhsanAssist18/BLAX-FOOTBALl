@@ -46,6 +46,17 @@ export default function BookModal({
   const { user, loading } = useAuth();
   const { showSuccess, showError } = useNotifications();
 
+  // Auto-fill form data when user is available
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.name || "",
+        phone: user.phone || "",
+      }));
+    }
+  }, [user]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, "0");
@@ -91,7 +102,7 @@ export default function BookModal({
     } else {
       const selectedFee =
         selectedFeeType === "player" ? schedule.feePlayer : schedule.feeGk;
-      return playerCount * Number(selectedFee);
+      return 1 * Number(selectedFee); // Individual is always 1 person
     }
   };
 
@@ -101,8 +112,8 @@ export default function BookModal({
       scheduleId: String(scheduleId),
       bookingType: bookingType.toUpperCase(),
       isGuest: user ? false : true,
-      name: formData.name,
-      phoneNumber: formData.phone,
+      name: user ? user.name : formData.name,
+      phoneNumber: user ? user.phone : formData.phone,
       isPlayer: selectedFeeType === "player" || bookingType === "team",
       isGk: selectedFeeType === "gk" || bookingType === "team",
     };
@@ -112,12 +123,15 @@ export default function BookModal({
 
   // Validate form before showing confirmation
   const validateForm = () => {
-    if (!formData.name.trim()) {
+    const nameToValidate = user ? user.name : formData.name;
+    const phoneToValidate = user ? user.phone : formData.phone;
+
+    if (!nameToValidate?.trim()) {
       showError("Nama harus diisi");
       return false;
     }
 
-    if (!formData.phone.trim()) {
+    if (!phoneToValidate?.trim()) {
       showError("Nomor HP harus diisi");
       return false;
     }
@@ -191,7 +205,7 @@ export default function BookModal({
     const bookingTypeText = bookingType === "individual" ? "Individual" : "Tim";
     const playerText =
       bookingType === "individual"
-        ? `${playerCount} ${selectedFeeType === "player" ? "Pemain" : "GK"}`
+        ? `1 ${selectedFeeType === "player" ? "Pemain" : "GK"}`
         : `${formData.teamName} (${formData.teamSize} pemain)`;
 
     return (
@@ -369,26 +383,6 @@ export default function BookModal({
                   <div className="space-y-4">
                     <div>
                       <label
-                        htmlFor="playerCount"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Jumlah Pemain
-                      </label>
-                      <input
-                        id="playerCount"
-                        type="number"
-                        min="1"
-                        max="8"
-                        value={playerCount}
-                        onChange={(e) =>
-                          handlePlayerCountChange(parseInt(e.target.value) || 1)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label
                         htmlFor="playerName"
                         className="block text-sm font-medium text-gray-700 mb-1"
                       >
@@ -402,8 +396,18 @@ export default function BookModal({
                         onChange={(e) =>
                           handleInputChange("name", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={!!user} // Disable if user exists
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                          user
+                            ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
+                            : "border-gray-300"
+                        }`}
                       />
+                      {user && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Data diambil dari profil akun Anda
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -421,8 +425,18 @@ export default function BookModal({
                         onChange={(e) =>
                           handleInputChange("phone", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={!!user} // Disable if user exists
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                          user
+                            ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
+                            : "border-gray-300"
+                        }`}
                       />
+                      {user && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Data diambil dari profil akun Anda
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -440,36 +454,23 @@ export default function BookModal({
                       <input
                         id="name"
                         type="text"
-                        placeholder="Masukkan nama tim"
+                        placeholder="Masukkan nama PIC"
                         value={formData.name}
                         onChange={(e) =>
                           handleInputChange("name", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={!!user} // Disable if user exists
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                          user
+                            ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
+                            : "border-gray-300"
+                        }`}
                       />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="teamSize"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Jumlah Pemain
-                      </label>
-                      <input
-                        id="teamSize"
-                        type="number"
-                        min="8"
-                        max="16"
-                        value={formData.teamSize}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "teamSize",
-                            parseInt(e.target.value) || 11
-                          )
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
+                      {user && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Data diambil dari profil akun Anda
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -487,8 +488,18 @@ export default function BookModal({
                         onChange={(e) =>
                           handleInputChange("phone", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={!!user} // Disable if user exists
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                          user
+                            ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
+                            : "border-gray-300"
+                        }`}
                       />
+                      {user && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Data diambil dari profil akun Anda
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -525,8 +536,7 @@ export default function BookModal({
                   ) : (
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">
-                        {playerCount}{" "}
-                        {selectedFeeType === "player" ? "Pemain" : "GK"} x{" "}
+                        1 {selectedFeeType === "player" ? "Pemain" : "GK"} x{" "}
                         {formatCurrency(
                           Number(
                             selectedFeeType === "player"

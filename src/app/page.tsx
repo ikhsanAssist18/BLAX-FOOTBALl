@@ -11,7 +11,8 @@ export default function HomePage() {
     <div className="min-h-screen">
       <Navbar useScrollEffect={true} />
       <Hero />
-      
+      <SchedulesCarousel />
+
       {/* Payment Checker Section */}
       <section className="py-16 bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,8 +27,7 @@ export default function HomePage() {
           <PaymentChecker />
         </div>
       </section>
-      
-      <SchedulesCarousel />
+
       <NewsSection />
       {/* <Testimonials /> */}
       <Footer />

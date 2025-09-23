@@ -1,5 +1,6 @@
 import { encryptWithPublicKey } from "@/lib/helper";
 import { bookingRequest } from "@/types/booking";
+import { AuthService } from "./auth";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/booking`;
 
@@ -7,15 +8,23 @@ class BookingService {
   async bookSlot(data: bookingRequest) {
     const encrypt = await encryptWithPublicKey(data);
     console.log("encrypt", encrypt);
+    const session = await AuthService.getSession();
 
     const finalPayload = {
       data: encrypt,
     };
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/book-schedule`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(finalPayload),
     });
 
