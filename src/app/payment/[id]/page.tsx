@@ -16,26 +16,36 @@ import {
   MapPin,
   User,
   Phone,
+  Pointer,
 } from "lucide-react";
 import Button from "@/components/atoms/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/Card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/atoms/Card";
 import Badge from "@/components/atoms/Badge";
 import { useNotifications } from "@/components/organisms/NotificationContainer";
 import { bookingService } from "@/utils/booking";
 import { formatCurrency } from "@/lib/helper";
 import LoadingScreen from "@/components/atoms/LoadingScreen";
+import Navbar from "@/components/organisms/Navbar";
 
 interface PaymentData {
-  customerName: string;
-  customerPhone: string;
+  name: string;
+  phone: string;
   bookId: string;
-  amount: number;
-  qrisImageBase64: string;
+  total: number;
+  imageBase64: string;
   status: "pending" | "settlement" | "expire";
   scheduleName?: string;
   venue?: string;
   date?: string;
   time?: string;
+  bookingType?: string;
+  feeGk?: number;
+  feePlayer?: number;
   error?: string;
 }
 
@@ -105,7 +115,8 @@ export default function PaymentPage() {
         return {
           icon: <XCircle className="w-6 h-6 text-red-500" />,
           title: "Payment Expired",
-          description: "This payment link has expired. Please create a new booking.",
+          description:
+            "This payment link has expired. Please create a new booking.",
           color: "border-red-200 bg-red-50",
           textColor: "text-red-800",
         };
@@ -121,12 +132,18 @@ export default function PaymentPage() {
   };
 
   if (loading) {
-    return <LoadingScreen message="Loading payment information..." />;
+    return (
+      <>
+        <Navbar />
+        <LoadingScreen message="Loading payment information..." />
+      </>
+    );
   }
 
   if (!paymentData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+        <Navbar />
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center">
             <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
@@ -134,7 +151,8 @@ export default function PaymentPage() {
               Payment Not Found
             </h2>
             <p className="text-gray-600 mb-6">
-              The payment information could not be loaded. Please check your payment ID and try again.
+              The payment information could not be loaded. Please check your
+              payment ID and try again.
             </p>
             <div className="flex space-x-3">
               <Button
@@ -158,10 +176,65 @@ export default function PaymentPage() {
     );
   }
 
+  // If payment status is expired, show only the expired card
+  if (paymentData.status === "expire") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Payment Information
+              </h1>
+              <p className="text-gray-600">
+                Complete your booking payment securely
+              </p>
+            </div>
+          </div>
+
+          {/* Expired Card */}
+          <div className="flex items-center justify-center">
+            <Card className="border-red-200 bg-red-50 max-w-md w-full">
+              <CardContent className="p-8 text-center">
+                <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-red-800 mb-2">
+                  Payment Expired
+                </h3>
+                <p className="text-red-700 mb-6">
+                  This payment link has expired. Please create a new booking to
+                  continue.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/schedule")}
+                    className="flex-1 border-red-300 text-red-700 hover:bg-red-100"
+                  >
+                    New Booking
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => router.push("/")}
+                    className="flex-1"
+                  >
+                    Home
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const statusDisplay = getStatusDisplay();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <Navbar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -190,7 +263,9 @@ export default function PaymentPage() {
             <div className="flex items-center space-x-4">
               {statusDisplay?.icon}
               <div>
-                <h3 className={`text-lg font-semibold ${statusDisplay?.textColor}`}>
+                <h3
+                  className={`text-lg font-semibold ${statusDisplay?.textColor}`}
+                >
                   {statusDisplay?.title}
                 </h3>
                 <p className={`text-sm ${statusDisplay?.textColor}`}>
@@ -216,7 +291,9 @@ export default function PaymentPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between bg-white p-3 rounded border border-yellow-300">
                     <div>
-                      <p className="text-sm text-yellow-700 font-medium">Booking ID</p>
+                      <p className="text-sm text-yellow-700 font-medium">
+                        Booking ID
+                      </p>
                       <span className="text-lg font-mono font-bold text-gray-800">
                         {paymentData.bookId}
                       </span>
@@ -232,35 +309,40 @@ export default function PaymentPage() {
                     </Button>
                   </div>
                   <div className="text-sm text-yellow-700 leading-relaxed">
-                    <strong>📝 Important:</strong> Save your booking ID as proof of payment 
-                    or provide it to admin if payment fails.
+                    <strong>📝 Important:</strong> Save your booking ID as proof
+                    of payment or provide it to admin if payment fails.
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Customer Details */}
+            {/* Payment Details */}
             <Card className="border-blue-200 bg-blue-50">
               <CardHeader>
                 <CardTitle className="flex items-center text-blue-800">
                   <User className="w-5 h-5 mr-2" />
-                  Customer Details
+                  Payment Details
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <User className="w-4 h-4 text-blue-600" />
-                    <span className="text-gray-700">{paymentData.customerName}</span>
+                    <span className="text-gray-700">{paymentData.name}</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Pointer className="w-4 h-4 text-blue-600" />
+                    <span className="text-gray-700">{paymentData.venue}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-4 h-4 text-blue-600" />
-                    <span className="text-gray-700">{paymentData.customerPhone}</span>
+                    <span className="text-gray-700">{paymentData.phone}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <CreditCard className="w-4 h-4 text-blue-600" />
                     <span className="text-gray-700">
-                      Amount: <strong>{formatCurrency(paymentData.amount)}</strong>
+                      Amount:{" "}
+                      <strong>{formatCurrency(paymentData.total)}</strong>
                     </span>
                   </div>
                 </div>
@@ -279,19 +361,26 @@ export default function PaymentPage() {
                 <CardContent>
                   <div className="space-y-3">
                     <div>
-                      <p className="font-semibold text-gray-900">{paymentData.scheduleName}</p>
+                      <p className="font-semibold text-gray-900">
+                        {paymentData.scheduleName}
+                      </p>
                     </div>
                     {paymentData.venue && (
                       <div className="flex items-center space-x-3">
                         <MapPin className="w-4 h-4 text-purple-600" />
-                        <span className="text-gray-700">{paymentData.venue}</span>
+                        <span className="text-gray-700">
+                          {paymentData.venue}
+                        </span>
                       </div>
                     )}
                     {paymentData.date && paymentData.time && (
                       <div className="flex items-center space-x-3">
                         <Clock className="w-4 h-4 text-purple-600" />
                         <span className="text-gray-700">
-                          {new Date(paymentData.date).toLocaleDateString("id-ID")} • {paymentData.time} WIB
+                          {new Date(paymentData.date).toLocaleDateString(
+                            "id-ID"
+                          )}{" "}
+                          • {paymentData.time} WIB
                         </span>
                       </div>
                     )}
@@ -303,7 +392,7 @@ export default function PaymentPage() {
 
           {/* QR Code Section */}
           <div className="space-y-6">
-            {paymentData.status === "pending" && paymentData.qrisImageBase64 && (
+            {paymentData.status === "pending" && paymentData.imageBase64 && (
               <Card className="border-green-200 bg-green-50">
                 <CardHeader>
                   <CardTitle className="flex items-center text-green-800">
@@ -314,7 +403,7 @@ export default function PaymentPage() {
                 <CardContent className="text-center">
                   <div className="bg-white border-2 border-gray-200 rounded-lg p-6 inline-block mb-4">
                     <img
-                      src={paymentData.qrisImageBase64}
+                      src={paymentData.imageBase64}
                       alt="QRIS Code"
                       className="w-64 h-64 mx-auto"
                       onError={(e) => {
@@ -344,7 +433,8 @@ export default function PaymentPage() {
                     Payment Successful!
                   </h3>
                   <p className="text-green-700 mb-6">
-                    Your payment has been confirmed. Please contact admin and check lineup regularly.
+                    Your payment has been confirmed. Please contact admin and
+                    check lineup regularly.
                   </p>
                   <Button
                     variant="primary"
@@ -357,36 +447,6 @@ export default function PaymentPage() {
               </Card>
             )}
 
-            {paymentData.status === "expire" && (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-8 text-center">
-                  <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-red-800 mb-2">
-                    Payment Expired
-                  </h3>
-                  <p className="text-red-700 mb-6">
-                    This payment link has expired. Please create a new booking to continue.
-                  </p>
-                  <div className="flex space-x-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push("/schedule")}
-                      className="flex-1 border-red-300 text-red-700 hover:bg-red-100"
-                    >
-                      New Booking
-                    </Button>
-                    <Button
-                      variant="primary"
-                      onClick={() => router.push("/")}
-                      className="flex-1"
-                    >
-                      Home
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Action Buttons */}
             <div className="space-y-3">
               <Button
@@ -395,7 +455,9 @@ export default function PaymentPage() {
                 className="w-full"
                 disabled={refreshing}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                />
                 {refreshing ? "Refreshing..." : "Refresh Status"}
               </Button>
 
@@ -421,7 +483,9 @@ export default function PaymentPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Payment Issues</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">
+                  Payment Issues
+                </h4>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• QR code not working? Try refreshing the page</li>
                   <li>• Payment failed? Contact our support team</li>
@@ -429,7 +493,9 @@ export default function PaymentPage() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Contact Support</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">
+                  Contact Support
+                </h4>
                 <div className="text-sm text-gray-600 space-y-1">
                   <p>📞 Phone: +62 21 1234 5678</p>
                   <p>📧 Email: support@blaxfootball.com</p>

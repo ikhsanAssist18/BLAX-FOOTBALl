@@ -17,15 +17,22 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Camera,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/Card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/atoms/Card";
 import Button from "@/components/atoms/Button";
 import Badge from "@/components/atoms/Badge";
 import { useNotifications } from "@/components/organisms/NotificationContainer";
-import { voucherService, UserVoucher } from "@/utils/voucher";
+import { voucherService } from "@/utils/voucher";
 import { formatCurrency, formatDate } from "@/lib/helper";
 import LoadingScreen from "@/components/atoms/LoadingScreen";
 import Navbar from "@/components/organisms/Navbar";
+import { UserVoucher } from "@/types/voucher";
 
 // Mock booking history data
 const mockBookingHistory = [
@@ -90,9 +97,9 @@ export default function PlayerDashboardPage() {
     }
 
     // Check if user has player role
-    if (user.role !== "player" && user.role !== "user") {
+    if (user.role !== "Player" && user.role !== "Admin") {
       showError("Access Denied", "This dashboard is only for players");
-      router.push("/dashboard");
+      router.push("/");
       return;
     }
 
@@ -123,7 +130,8 @@ export default function PlayerDashboardPage() {
   };
 
   const handleViewPaymentDetails = (paymentId: string) => {
-    router.push(`/payment/${paymentId}`);
+    const safeId = decodeURIComponent(paymentId as string);
+    router.push(`/payment/${safeId}`);
   };
 
   const getStatusIcon = (status: string) => {
@@ -157,12 +165,14 @@ export default function PlayerDashboardPage() {
   };
 
   const getVoucherStatus = (voucher: UserVoucher) => {
-    if (voucher.usedAt) return { status: "used", color: "bg-gray-100 text-gray-800" };
-    
+    if (voucher.usedAt)
+      return { status: "used", color: "bg-gray-100 text-gray-800" };
+
     const now = new Date();
     const validUntil = new Date(voucher.voucher.validUntil);
-    
-    if (validUntil < now) return { status: "expired", color: "bg-red-100 text-red-800" };
+
+    if (validUntil < now)
+      return { status: "expired", color: "bg-red-100 text-red-800" };
     return { status: "available", color: "bg-green-100 text-green-800" };
   };
 
@@ -172,9 +182,15 @@ export default function PlayerDashboardPage() {
   // Stats
   const stats = {
     totalBookings: bookingHistory.length,
-    availableVouchers: userVouchers.filter(v => !v.usedAt && new Date(v.voucher.validUntil) > new Date()).length,
-    completedGames: bookingHistory.filter(b => b.bookingStatus === "CONFIRMED").length,
-    totalSpent: bookingHistory.filter(b => b.paymentStatus === "PAID").reduce((sum, b) => sum + b.amount, 0),
+    availableVouchers: userVouchers.filter(
+      (v) => !v.usedAt && new Date(v.voucher.validUntil) > new Date()
+    ).length,
+    completedGames: bookingHistory.filter(
+      (b) => b.bookingStatus === "CONFIRMED"
+    ).length,
+    totalSpent: bookingHistory
+      .filter((b) => b.paymentStatus === "PAID")
+      .reduce((sum, b) => sum + b.amount, 0),
   };
 
   if (authLoading || loading) {
@@ -188,7 +204,7 @@ export default function PlayerDashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
       <Navbar />
-      
+
       <div className="pt-24 pb-8 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -216,7 +232,11 @@ export default function PlayerDashboardPage() {
                   disabled={refreshing}
                   className="flex items-center"
                 >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                  <RefreshCw
+                    className={`w-4 h-4 mr-2 ${
+                      refreshing ? "animate-spin" : ""
+                    }`}
+                  />
                   Refresh
                 </Button>
                 <Button
@@ -238,8 +258,12 @@ export default function PlayerDashboardPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalBookings}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Total Bookings
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.totalBookings}
+                    </p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-lg">
                     <Calendar className="w-6 h-6 text-blue-600" />
@@ -252,8 +276,12 @@ export default function PlayerDashboardPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Available Vouchers</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.availableVouchers}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Available Vouchers
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.availableVouchers}
+                    </p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-lg">
                     <Gift className="w-6 h-6 text-green-600" />
@@ -266,8 +294,12 @@ export default function PlayerDashboardPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Completed Games</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.completedGames}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Completed Games
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.completedGames}
+                    </p>
                   </div>
                   <div className="p-3 bg-purple-100 rounded-lg">
                     <Trophy className="w-6 h-6 text-purple-600" />
@@ -280,8 +312,12 @@ export default function PlayerDashboardPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Spent</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalSpent)}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Total Spent
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(stats.totalSpent)}
+                    </p>
                   </div>
                   <div className="p-3 bg-orange-100 rounded-lg">
                     <CreditCard className="w-6 h-6 text-orange-600" />
@@ -306,7 +342,9 @@ export default function PlayerDashboardPage() {
                     <div className="text-center py-8">
                       <Gift className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No vouchers available</p>
-                      <p className="text-sm text-gray-400">Check back later for new offers!</p>
+                      <p className="text-sm text-gray-400">
+                        Check back later for new offers!
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -320,19 +358,22 @@ export default function PlayerDashboardPage() {
                             className="p-4 border border-green-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
                           >
                             <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-semibold text-green-800">{voucher.name}</h4>
+                              <h4 className="font-semibold text-green-800">
+                                {voucher.name}
+                              </h4>
                               <Badge className={status.color}>
                                 {status.status}
                               </Badge>
                             </div>
-                            <p className="text-sm text-green-700 mb-2">{voucher.description}</p>
+                            <p className="text-sm text-green-700 mb-2">
+                              {voucher.description}
+                            </p>
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="text-lg font-bold text-green-800">
-                                  {voucher.discountType === "PERCENTAGE" 
-                                    ? `${voucher.discountValue}%` 
-                                    : formatCurrency(voucher.discountValue)
-                                  }
+                                  {voucher.discountType === "PERCENTAGE"
+                                    ? `${voucher.discountValue}%`
+                                    : formatCurrency(voucher.discountValue)}
                                 </p>
                                 <p className="text-xs text-green-600">
                                   Min: {formatCurrency(voucher.minPurchase)}
@@ -346,7 +387,10 @@ export default function PlayerDashboardPage() {
                               </div>
                             </div>
                             <div className="text-xs text-green-600 mt-2">
-                              Valid until: {new Date(voucher.validUntil).toLocaleDateString("id-ID")}
+                              Valid until:{" "}
+                              {new Date(voucher.validUntil).toLocaleDateString(
+                                "id-ID"
+                              )}
                             </div>
                           </div>
                         );
@@ -379,7 +423,9 @@ export default function PlayerDashboardPage() {
                       size="sm"
                       onClick={() => {
                         // Scroll to complete history section
-                        document.getElementById("complete-history")?.scrollIntoView({ behavior: "smooth" });
+                        document
+                          .getElementById("complete-history")
+                          ?.scrollIntoView({ behavior: "smooth" });
                       }}
                       className="text-blue-600 hover:text-blue-700"
                     >
@@ -409,9 +455,15 @@ export default function PlayerDashboardPage() {
                           className="p-4 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-blue-800">{booking.scheduleName}</h4>
+                            <h4 className="font-semibold text-blue-800">
+                              {booking.scheduleName}
+                            </h4>
                             <div className="flex space-x-2">
-                              <Badge className={`flex items-center space-x-1 ${getStatusColor(booking.paymentStatus)}`}>
+                              <Badge
+                                className={`flex items-center space-x-1 ${getStatusColor(
+                                  booking.paymentStatus
+                                )}`}
+                              >
                                 {getStatusIcon(booking.paymentStatus)}
                                 <span>{booking.paymentStatus}</span>
                               </Badge>
@@ -439,7 +491,9 @@ export default function PlayerDashboardPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleViewPaymentDetails(booking.paymentId)}
+                              onClick={() =>
+                                handleViewPaymentDetails(booking.paymentId)
+                              }
                               className="border-blue-300 text-blue-700 hover:bg-blue-100"
                             >
                               <Eye className="w-4 h-4 mr-1" />
@@ -454,7 +508,7 @@ export default function PlayerDashboardPage() {
               </Card>
 
               {/* Complete Booking History */}
-              <Card id="complete-history" className="bg-white/95 backdrop-blur-sm border border-purple-100">
+              <Card className="bg-white/95 backdrop-blur-sm border border-purple-100">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-purple-800">
                     <div className="flex items-center">
@@ -486,15 +540,27 @@ export default function PlayerDashboardPage() {
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div>
-                              <h4 className="font-semibold text-purple-800">{booking.scheduleName}</h4>
-                              <p className="text-sm text-purple-600">ID: {booking.bookingId}</p>
+                              <h4 className="font-semibold text-purple-800">
+                                {booking.scheduleName}
+                              </h4>
+                              <p className="text-sm text-purple-600">
+                                ID: {booking.bookingId}
+                              </p>
                             </div>
                             <div className="flex space-x-2">
-                              <Badge className={`flex items-center space-x-1 ${getStatusColor(booking.paymentStatus)}`}>
+                              <Badge
+                                className={`flex items-center space-x-1 ${getStatusColor(
+                                  booking.paymentStatus
+                                )}`}
+                              >
                                 {getStatusIcon(booking.paymentStatus)}
                                 <span>{booking.paymentStatus}</span>
                               </Badge>
-                              <Badge className={`flex items-center space-x-1 ${getStatusColor(booking.bookingStatus)}`}>
+                              <Badge
+                                className={`flex items-center space-x-1 ${getStatusColor(
+                                  booking.bookingStatus
+                                )}`}
+                              >
                                 {getStatusIcon(booking.bookingStatus)}
                                 <span>{booking.bookingStatus}</span>
                               </Badge>
@@ -518,12 +584,17 @@ export default function PlayerDashboardPage() {
 
                           <div className="flex items-center justify-between pt-3 border-t border-purple-200">
                             <div className="text-xs text-purple-600">
-                              Booked: {new Date(booking.createdAt).toLocaleDateString("id-ID")}
+                              Booked:{" "}
+                              {new Date(booking.createdAt).toLocaleDateString(
+                                "id-ID"
+                              )}
                             </div>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleViewPaymentDetails(booking.paymentId)}
+                              onClick={() =>
+                                handleViewPaymentDetails(booking.paymentId)
+                              }
                               className="border-purple-300 text-purple-700 hover:bg-purple-100"
                             >
                               <Eye className="w-4 h-4 mr-1" />

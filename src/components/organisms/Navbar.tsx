@@ -230,7 +230,7 @@ export default function Navbar({ useScrollEffect = false }: NavbarProps) {
               </Link>
               {user && (
                 <Link
-                  href="/dashboard"
+                  href="/player-dashboard"
                   className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
                 >
                   Dashboard
@@ -239,25 +239,21 @@ export default function Navbar({ useScrollEffect = false }: NavbarProps) {
                   ></span>
                 </Link>
               )}
-              {user &&
-                <Link
-                  href="/gallery"
-                  className={`block font-medium py-2 px-4 rounded-lg transition-all duration-300 ${getMobileTextStyles()}`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Gallery
-                </Link>
-                (user.role === "Admin" || user.role === "superadmin") && (
-                  <Link
-                    href="/admin"
-                    className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
-                  >
-                    Admin
-                    <span
-                      className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
-                    ></span>
-                  </Link>
-                )}
+              {user && (
+                <>
+                  {user.role === "Admin" && (
+                    <Link
+                      href="/admin"
+                      className={`font-medium transition-all duration-300 relative group ${getTextStyles()}`}
+                    >
+                      Admin
+                      <span
+                        className={`absolute -bottom-1 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 ${getGradientStyles()}`}
+                      ></span>
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Desktop Auth Section */}

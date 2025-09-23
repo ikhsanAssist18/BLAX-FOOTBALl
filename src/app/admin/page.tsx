@@ -262,15 +262,15 @@ export default function AdminPage() {
               Berita
             </TabsTrigger>
             <TabsTrigger
-              value="venues-rules"
+              value="master-data"
               onClick={setSelectedTab}
               isActive={selectedTab === "venues-rules"}
               className="text-xs md:text-sm"
             >
-              <span className="hidden lg:inline">Venue & Aturan</span>
+              <span className="hidden lg:inline">Master Data</span>
               <span className="lg:hidden">V&A</span>
             </TabsTrigger>
-            <TabsTrigger
+            {/* <TabsTrigger
               value="facilities"
               onClick={setSelectedTab}
               isActive={selectedTab === "facilities"}
@@ -278,7 +278,7 @@ export default function AdminPage() {
             >
               <span className="hidden md:inline">Fasilitas</span>
               <span className="md:hidden">Fas</span>
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger
               value="settings"
               onClick={setSelectedTab}
@@ -307,6 +307,15 @@ export default function AdminPage() {
           >
             <OverviewTab />
           </TabsContent> */}
+
+          {/* Reports Tab */}
+          <TabsContent
+            value="reports"
+            activeTab={selectedTab}
+            className="space-y-6 transition-all duration-300 ease-in-out"
+          >
+            <ReportsTab />
+          </TabsContent>
 
           {/* Schedule Tab */}
           <TabsContent
@@ -345,15 +354,15 @@ export default function AdminPage() {
 
           {/* Venues and Rules Tab */}
           <TabsContent
-            value="venues-rules"
+            value="master-data"
             activeTab={selectedTab}
             className="space-y-6 transition-all duration-300 ease-in-out"
+          >
             <MasterDataTab />
           </TabsContent>
 
           {/* Reports Tab */}
           <TabsContent
-            value="reports"
             value="settings"
             activeTab={selectedTab}
             className="space-y-6 transition-all duration-300 ease-in-out"
@@ -363,6 +372,5 @@ export default function AdminPage() {
         </Tabs>
       </div>
     </div>
-  )
   );
 }

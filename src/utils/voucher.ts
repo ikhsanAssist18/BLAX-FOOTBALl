@@ -14,12 +14,12 @@ class VoucherService {
     limit: number;
   }> {
     const queryParams = new URLSearchParams();
-    if (search) queryParams.append("search", search);
-    if (page) queryParams.append("page", page.toString());
-    if (limit) queryParams.append("limit", limit.toString());
+    // if (search) queryParams.append("search", search);
+    // if (page) queryParams.append("page", page.toString());
+    // if (limit) queryParams.append("limit", limit.toString());
 
     const response = await apiClient.get(
-      `/api/v1/vouchers/voucher-data?${queryParams}`
+      `/api/v1/vouchers/vouchers-data?${queryParams}`
     );
     return response;
   }
@@ -58,7 +58,10 @@ class VoucherService {
     return response.data;
   }
 
-  async applyVoucher(voucherId: string, bookingId: string): Promise<{
+  async applyVoucher(
+    voucherId: string,
+    bookingId: string
+  ): Promise<{
     success: boolean;
     discountAmount: number;
     finalAmount: number;
