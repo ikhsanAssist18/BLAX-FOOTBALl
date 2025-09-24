@@ -7,6 +7,8 @@ export interface GalleryPhoto {
   category: string;
   venue: string;
   date: string;
+  time: string;
+  driveLink: string;
   tags: string[];
   uploadedBy: string;
   isPublic: boolean;
@@ -19,4 +21,16 @@ export interface GalleryCategory {
   name: string;
   description?: string;
   photoCount: number;
+}
+
+export interface GallerySession {
+  id: string;
+  sessionName: string;
+  date: string;
+  time: string;
+  driveLink: string;
+  venue: string;
+  category: string;
+  photoCount: number;
+  createdAt: string;
 }

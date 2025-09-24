@@ -1,5 +1,5 @@
 import { apiClient } from "./api";
-import { GalleryPhoto, GalleryCategory } from "@/types/gallery";
+import { GalleryPhoto, GalleryCategory, GallerySession } from "@/types/gallery";
 
 class GalleryService {
   async getPublicPhotos(
@@ -97,6 +97,59 @@ class GalleryService {
 
   async deletePhoto(id: string): Promise<void> {
     await apiClient.delete(`/api/v1/gallery/photos/${id}`);
+  }
+
+  // Gallery sessions management
+  async getGallerySessions(
+    search?: string,
+    category?: string,
+    venue?: string,
+    page?: number,
+    limit?: number
+  ): Promise<{
+    data: GallerySession[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const queryParams = new URLSearchParams();
+    if (search) queryParams.append("search", search);
+    if (category) queryParams.append("category", category);
+    if (venue) queryParams.append("venue", venue);
+    if (page) queryParams.append("page", page.toString());
+    if (limit) queryParams.append("limit", limit.toString());
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BE}/api/v1/gallery/sessions?${queryParams}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to fetch gallery sessions");
+    }
+
+    return result;
+  }
+
+  async createGallerySession(data: Omit<GallerySession, "id" | "createdAt">): Promise<GallerySession> {
+    const response = await apiClient.post("/api/v1/gallery/sessions", data);
+    return response.data;
+  }
+
+  async updateGallerySession(id: string, data: Partial<GallerySession>): Promise<GallerySession> {
+    const response = await apiClient.put(`/api/v1/gallery/sessions/${id}`, data);
+    return response.data;
+  }
+
+  async deleteGallerySession(id: string): Promise<void> {
+    await apiClient.delete(`/api/v1/gallery/sessions/${id}`);
   }
 }
 

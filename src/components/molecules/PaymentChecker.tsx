@@ -18,6 +18,7 @@ import { paymentService } from "@/utils/payment";
 import { PaymentStatus } from "@/types/payment";
 import { formatCurrency } from "@/lib/helper";
 import { useRouter } from "next/navigation";
+import PaymentPreviewModal from "./PaymentPreviewModal";
 
 export default function PaymentChecker() {
   const [bookingId, setBookingId] = useState("");
@@ -26,6 +27,8 @@ export default function PaymentChecker() {
     null
   );
   const [error, setError] = useState("");
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
   const { showSuccess, showError } = useNotifications();
   const router = useRouter();
 
@@ -50,8 +53,32 @@ export default function PaymentChecker() {
         setPaymentStatus(response.data.status);
         showSuccess("Payment status retrieved successfully");
 
-        // Auto-redirect to payment page
-        handleViewFullPayment(response.data.status.id);
+        // Show preview modal if payment is successful
+        if (response.data.status.status === "settlement") {
+          const mockPreviewData = {
+            bookingId: response.data.status.bookId,
+            amount: response.data.status.total,
+            paymentDate: new Date().toISOString().split('T')[0],
+            paymentTime: new Date().toLocaleTimeString("id-ID", { 
+              hour: "2-digit", 
+              minute: "2-digit" 
+            }),
+            paymentMethod: "QRIS",
+            transactionRef: `TXN-${Date.now()}`,
+            customerName: response.data.status.name,
+            customerPhone: response.data.status.phone,
+            scheduleName: "Fun Game Weekday",
+            venue: "Lapangan Futsal Central",
+            matchDate: new Date().toISOString().split('T')[0],
+            matchTime: "19:00",
+            status: response.data.status.status,
+          };
+          setPreviewData(mockPreviewData);
+          setShowPreviewModal(true);
+        } else {
+          // Auto-redirect to payment page for non-successful payments
+          handleViewFullPayment(response.data.status.id);
+        }
       } else {
         setError("Booking ID not found");
         showError("Booking ID not found");
@@ -72,8 +99,14 @@ export default function PaymentChecker() {
     }
   };
 
+  const handleClosePreviewModal = () => {
+    setShowPreviewModal(false);
+    setPreviewData(null);
+  };
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <>
+      <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center text-center justify-center">
           <CreditCard className="w-6 h-6 mr-2" />
@@ -142,6 +175,15 @@ export default function PaymentChecker() {
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Payment Preview Modal */}
+      <PaymentPreviewModal
+        isOpen={showPreviewModal}
+        onClose={handleClosePreviewModal}
+        paymentData={previewData}
+        loading={loading}
+      />
+    </>
   );
 }
