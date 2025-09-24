@@ -29,11 +29,12 @@ import {
 } from "../atoms/Dialog";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import { useNotifications } from "./NotificationContainer";
-import { voucherService, Voucher, VoucherPayload } from "@/utils/voucher";
+import { voucherService } from "@/utils/voucher";
 import Badge from "../atoms/Badge";
 import Pagination from "../atoms/Pagination";
 import { CardsLoadingSkeleton } from "./LoadingSkeleton";
 import { formatCurrency } from "@/lib/helper";
+import { Voucher, VoucherPayload } from "@/types/voucher";
 
 export default function VoucherManagement() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -152,17 +153,17 @@ export default function VoucherManagement() {
       errors.description = "Description is required";
     }
 
-    if (formData.discountValue <= 0) {
-      errors.discountValue = "Discount value must be greater than 0";
-    }
+    // if (formData.discountValue <= 0) {
+    //   errors.discountValue = "Discount value must be greater than 0";
+    // }
 
-    if (formData.discountType === "PERCENTAGE" && formData.discountValue > 100) {
-      errors.discountValue = "Percentage discount cannot exceed 100%";
-    }
+    // if (formData.discountType === "PERCENTAGE" && formData.discountValue > 100) {
+    //   errors.discountValue = "Percentage discount cannot exceed 100%";
+    // }
 
-    if (formData.minPurchase < 0) {
-      errors.minPurchase = "Minimum purchase cannot be negative";
-    }
+    // if (formData.minPurchase < 0) {
+    //   errors.minPurchase = "Minimum purchase cannot be negative";
+    // }
 
     if (!formData.validFrom) {
       errors.validFrom = "Valid from date is required";
@@ -178,9 +179,9 @@ export default function VoucherManagement() {
       }
     }
 
-    if (formData.usageLimit <= 0) {
-      errors.usageLimit = "Usage limit must be greater than 0";
-    }
+    // if (formData.usageLimit <= 0) {
+    //   errors.usageLimit = "Usage limit must be greater than 0";
+    // }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -210,9 +211,7 @@ export default function VoucherManagement() {
       console.error("Error saving voucher:", error);
       showError(
         "Error",
-        editingVoucher
-          ? "Failed to update voucher"
-          : "Failed to create voucher"
+        editingVoucher ? "Failed to update voucher" : "Failed to create voucher"
       );
     } finally {
       setSubmitting(false);
@@ -256,9 +255,7 @@ export default function VoucherManagement() {
       // Simulate API call for bulk delete
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      showSuccess(
-        `${selectedVouchers.length} vouchers deleted successfully`
-      );
+      showSuccess(`${selectedVouchers.length} vouchers deleted successfully`);
       setShowBulkDeleteConfirm(false);
       setSelectedVouchers([]);
       fetchVouchers();
@@ -314,10 +311,14 @@ export default function VoucherManagement() {
     const validFrom = new Date(voucher.validFrom);
     const validUntil = new Date(voucher.validUntil);
 
-    if (!voucher.isActive) return { status: "inactive", color: "bg-gray-100 text-gray-800" };
-    if (validFrom > now) return { status: "upcoming", color: "bg-blue-100 text-blue-800" };
-    if (validUntil < now) return { status: "expired", color: "bg-red-100 text-red-800" };
-    if (voucher.usedCount >= voucher.usageLimit) return { status: "used up", color: "bg-orange-100 text-orange-800" };
+    if (!voucher.isActive)
+      return { status: "inactive", color: "bg-gray-100 text-gray-800" };
+    if (validFrom > now)
+      return { status: "upcoming", color: "bg-blue-100 text-blue-800" };
+    if (validUntil < now)
+      return { status: "expired", color: "bg-red-100 text-red-800" };
+    if (voucher.usedCount >= voucher.usageLimit)
+      return { status: "used up", color: "bg-orange-100 text-orange-800" };
     return { status: "active", color: "bg-green-100 text-green-800" };
   };
 
@@ -694,7 +695,11 @@ export default function VoucherManagement() {
                     <div className="text-xs text-gray-500 space-y-1">
                       <div className="flex items-center">
                         <Calendar className="w-3 h-3 mr-1" />
-                        Valid: {new Date(voucher.validFrom).toLocaleDateString()} - {new Date(voucher.validUntil).toLocaleDateString()}
+                        Valid:{" "}
+                        {new Date(
+                          voucher.validFrom
+                        ).toLocaleDateString()} -{" "}
+                        {new Date(voucher.validUntil).toLocaleDateString()}
                       </div>
                     </div>
 
@@ -845,7 +850,9 @@ export default function VoucherManagement() {
                 <Input
                   type="text"
                   value={formData.code}
-                  onChange={(e) => handleInputChange("code", e.target.value.toUpperCase())}
+                  onChange={(e) =>
+                    handleInputChange("code", e.target.value.toUpperCase())
+                  }
                   placeholder="e.g., SAVE20, NEWUSER"
                   className={formErrors.code ? "border-red-500" : ""}
                 />
@@ -877,7 +884,9 @@ export default function VoucherManagement() {
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 placeholder="Enter voucher description"
                 rows={3}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
@@ -899,7 +908,10 @@ export default function VoucherManagement() {
                 <select
                   value={formData.discountType}
                   onChange={(e) =>
-                    handleInputChange("discountType", e.target.value as "PERCENTAGE" | "FIXED")
+                    handleInputChange(
+                      "discountType",
+                      e.target.value as "PERCENTAGE" | "FIXED"
+                    )
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
@@ -916,11 +928,18 @@ export default function VoucherManagement() {
                   type="number"
                   value={formData.discountValue.toString()}
                   onChange={(e) =>
-                    handleInputChange("discountValue", parseFloat(e.target.value) || 0)
+                    handleInputChange(
+                      "discountValue",
+                      parseFloat(e.target.value) || 0
+                    )
                   }
-                  placeholder={formData.discountType === "PERCENTAGE" ? "20" : "50000"}
+                  placeholder={
+                    formData.discountType === "PERCENTAGE" ? "20" : "50000"
+                  }
                   min="0"
-                  max={formData.discountType === "PERCENTAGE" ? "100" : undefined}
+                  max={
+                    formData.discountType === "PERCENTAGE" ? "100" : undefined
+                  }
                   className={formErrors.discountValue ? "border-red-500" : ""}
                 />
                 {formErrors.discountValue && (
@@ -938,7 +957,10 @@ export default function VoucherManagement() {
                   type="number"
                   value={formData.minPurchase.toString()}
                   onChange={(e) =>
-                    handleInputChange("minPurchase", parseFloat(e.target.value) || 0)
+                    handleInputChange(
+                      "minPurchase",
+                      parseFloat(e.target.value) || 0
+                    )
                   }
                   placeholder="100000"
                   min="0"
@@ -961,7 +983,10 @@ export default function VoucherManagement() {
                   type="number"
                   value={formData.maxDiscount?.toString() || ""}
                   onChange={(e) =>
-                    handleInputChange("maxDiscount", parseFloat(e.target.value) || 0)
+                    handleInputChange(
+                      "maxDiscount",
+                      parseFloat(e.target.value) || 0
+                    )
                   }
                   placeholder="500000"
                   min="0"
@@ -980,7 +1005,9 @@ export default function VoucherManagement() {
                 <Input
                   type="date"
                   value={formData.validFrom}
-                  onChange={(e) => handleInputChange("validFrom", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("validFrom", e.target.value)
+                  }
                   className={formErrors.validFrom ? "border-red-500" : ""}
                 />
                 {formErrors.validFrom && (
@@ -997,7 +1024,9 @@ export default function VoucherManagement() {
                 <Input
                   type="date"
                   value={formData.validUntil}
-                  onChange={(e) => handleInputChange("validUntil", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("validUntil", e.target.value)
+                  }
                   className={formErrors.validUntil ? "border-red-500" : ""}
                 />
                 {formErrors.validUntil && (
@@ -1015,7 +1044,10 @@ export default function VoucherManagement() {
                   type="number"
                   value={formData.usageLimit.toString()}
                   onChange={(e) =>
-                    handleInputChange("usageLimit", parseInt(e.target.value) || 1)
+                    handleInputChange(
+                      "usageLimit",
+                      parseInt(e.target.value) || 1
+                    )
                   }
                   placeholder="100"
                   min="1"
@@ -1034,10 +1066,15 @@ export default function VoucherManagement() {
                 type="checkbox"
                 id="isActive"
                 checked={formData.isActive}
-                onChange={(e) => handleInputChange("isActive", e.target.checked)}
+                onChange={(e) =>
+                  handleInputChange("isActive", e.target.checked)
+                }
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+              <label
+                htmlFor="isActive"
+                className="text-sm font-medium text-gray-700"
+              >
                 Active voucher
               </label>
             </div>

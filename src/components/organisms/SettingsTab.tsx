@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Settings,
   User,
@@ -69,11 +69,13 @@ export default function SettingsTab() {
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const { showSuccess, showError } = useNotifications();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [settings, setSettings] = useState<SettingsData>({
     general: {
       siteName: "Blax Football",
-      siteDescription: "Platform booking futsal dan mini soccer terpercaya di Jakarta",
+      siteDescription:
+        "Platform booking futsal dan mini soccer terpercaya di Jakarta",
       contactEmail: "info@blaxfootball.com",
       supportPhone: "+62 21 1234 5678",
       timezone: "Asia/Jakarta",
@@ -140,11 +142,14 @@ export default function SettingsTab() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       // In real implementation, save to backend
       console.log("Saving settings:", settings);
-      
-      showSuccess("Settings Saved", "All settings have been updated successfully");
+
+      showSuccess(
+        "Settings Saved",
+        "All settings have been updated successfully"
+      );
       setHasChanges(false);
     } catch (error) {
       showError("Save Failed", "Failed to save settings. Please try again.");
@@ -158,7 +163,8 @@ export default function SettingsTab() {
     setSettings({
       general: {
         siteName: "Blax Football",
-        siteDescription: "Platform booking futsal dan mini soccer terpercaya di Jakarta",
+        siteDescription:
+          "Platform booking futsal dan mini soccer terpercaya di Jakarta",
         contactEmail: "info@blaxfootball.com",
         supportPhone: "+62 21 1234 5678",
         timezone: "Asia/Jakarta",
@@ -206,10 +212,15 @@ export default function SettingsTab() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `blax-football-settings-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `blax-football-settings-${
+      new Date().toISOString().split("T")[0]
+    }.json`;
     link.click();
     URL.revokeObjectURL(url);
-    showSuccess("Settings Exported", "Settings configuration has been downloaded");
+    showSuccess(
+      "Settings Exported",
+      "Settings configuration has been downloaded"
+    );
   };
 
   const importSettings = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,7 +233,10 @@ export default function SettingsTab() {
         const importedSettings = JSON.parse(e.target?.result as string);
         setSettings(importedSettings);
         setHasChanges(true);
-        showSuccess("Settings Imported", "Settings have been imported successfully");
+        showSuccess(
+          "Settings Imported",
+          "Settings have been imported successfully"
+        );
       } catch (error) {
         showError("Import Failed", "Invalid settings file format");
       }
@@ -230,12 +244,18 @@ export default function SettingsTab() {
     reader.readAsText(file);
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Pengaturan Sistem</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Pengaturan Sistem
+          </h2>
           <p className="text-gray-600 mt-1">
             Kelola konfigurasi dan preferensi platform
           </p>
@@ -318,23 +338,22 @@ export default function SettingsTab() {
                     <Download className="w-4 h-4 mr-2" />
                     Export Settings
                   </Button>
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={importSettings}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full flex items-center justify-center cursor-pointer"
-                      onClick={() => document.querySelector('input[type="file"]')?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Import Settings
-                    </Button>
-                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={importSettings}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleImportClick}
+                    className="w-full flex items-center justify-center"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import Settings
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -370,7 +389,11 @@ export default function SettingsTab() {
                         type="text"
                         value={settings.general.siteName}
                         onChange={(e) =>
-                          handleInputChange("general", "siteName", e.target.value)
+                          handleInputChange(
+                            "general",
+                            "siteName",
+                            e.target.value
+                          )
                         }
                         placeholder="Enter site name"
                       />
@@ -383,7 +406,11 @@ export default function SettingsTab() {
                         type="email"
                         value={settings.general.contactEmail}
                         onChange={(e) =>
-                          handleInputChange("general", "contactEmail", e.target.value)
+                          handleInputChange(
+                            "general",
+                            "contactEmail",
+                            e.target.value
+                          )
                         }
                         placeholder="Enter contact email"
                       />
@@ -397,7 +424,11 @@ export default function SettingsTab() {
                     <textarea
                       value={settings.general.siteDescription}
                       onChange={(e) =>
-                        handleInputChange("general", "siteDescription", e.target.value)
+                        handleInputChange(
+                          "general",
+                          "siteDescription",
+                          e.target.value
+                        )
                       }
                       rows={3}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -414,7 +445,11 @@ export default function SettingsTab() {
                         type="tel"
                         value={settings.general.supportPhone}
                         onChange={(e) =>
-                          handleInputChange("general", "supportPhone", e.target.value)
+                          handleInputChange(
+                            "general",
+                            "supportPhone",
+                            e.target.value
+                          )
                         }
                         placeholder="Enter support phone"
                       />
@@ -426,13 +461,21 @@ export default function SettingsTab() {
                       <select
                         value={settings.general.timezone}
                         onChange={(e) =>
-                          handleInputChange("general", "timezone", e.target.value)
+                          handleInputChange(
+                            "general",
+                            "timezone",
+                            e.target.value
+                          )
                         }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
-                        <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
-                        <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+                        <option value="Asia/Makassar">
+                          Asia/Makassar (WITA)
+                        </option>
+                        <option value="Asia/Jayapura">
+                          Asia/Jayapura (WIT)
+                        </option>
                       </select>
                     </div>
                   </div>
@@ -451,7 +494,11 @@ export default function SettingsTab() {
                         type="number"
                         value={settings.booking.maxAdvanceBookingDays.toString()}
                         onChange={(e) =>
-                          handleInputChange("booking", "maxAdvanceBookingDays", parseInt(e.target.value))
+                          handleInputChange(
+                            "booking",
+                            "maxAdvanceBookingDays",
+                            parseInt(e.target.value)
+                          )
                         }
                         min="1"
                         max="365"
@@ -465,7 +512,11 @@ export default function SettingsTab() {
                         type="number"
                         value={settings.booking.cancellationDeadlineHours.toString()}
                         onChange={(e) =>
-                          handleInputChange("booking", "cancellationDeadlineHours", parseInt(e.target.value))
+                          handleInputChange(
+                            "booking",
+                            "cancellationDeadlineHours",
+                            parseInt(e.target.value)
+                          )
                         }
                         min="1"
                         max="168"
@@ -482,7 +533,11 @@ export default function SettingsTab() {
                         type="number"
                         value={settings.booking.defaultPlayerFee.toString()}
                         onChange={(e) =>
-                          handleInputChange("booking", "defaultPlayerFee", parseInt(e.target.value))
+                          handleInputChange(
+                            "booking",
+                            "defaultPlayerFee",
+                            parseInt(e.target.value)
+                          )
                         }
                         min="0"
                       />
@@ -495,7 +550,11 @@ export default function SettingsTab() {
                         type="number"
                         value={settings.booking.defaultGkFee.toString()}
                         onChange={(e) =>
-                          handleInputChange("booking", "defaultGkFee", parseInt(e.target.value))
+                          handleInputChange(
+                            "booking",
+                            "defaultGkFee",
+                            parseInt(e.target.value)
+                          )
                         }
                         min="0"
                       />
@@ -505,7 +564,9 @@ export default function SettingsTab() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div>
-                        <h4 className="font-medium text-gray-900">Auto Confirm Bookings</h4>
+                        <h4 className="font-medium text-gray-900">
+                          Auto Confirm Bookings
+                        </h4>
                         <p className="text-sm text-gray-600">
                           Automatically confirm bookings without manual review
                         </p>
@@ -515,7 +576,11 @@ export default function SettingsTab() {
                           type="checkbox"
                           checked={settings.booking.autoConfirmBookings}
                           onChange={(e) =>
-                            handleInputChange("booking", "autoConfirmBookings", e.target.checked)
+                            handleInputChange(
+                              "booking",
+                              "autoConfirmBookings",
+                              e.target.checked
+                            )
                           }
                           className="sr-only peer"
                         />
@@ -525,7 +590,9 @@ export default function SettingsTab() {
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div>
-                        <h4 className="font-medium text-gray-900">Require Payment Upfront</h4>
+                        <h4 className="font-medium text-gray-900">
+                          Require Payment Upfront
+                        </h4>
                         <p className="text-sm text-gray-600">
                           Require payment before confirming bookings
                         </p>
@@ -535,7 +602,11 @@ export default function SettingsTab() {
                           type="checkbox"
                           checked={settings.booking.requirePaymentUpfront}
                           onChange={(e) =>
-                            handleInputChange("booking", "requirePaymentUpfront", e.target.checked)
+                            handleInputChange(
+                              "booking",
+                              "requirePaymentUpfront",
+                              e.target.checked
+                            )
                           }
                           className="sr-only peer"
                         />
@@ -549,29 +620,38 @@ export default function SettingsTab() {
               {/* Notification Settings */}
               {activeSection === "notifications" && (
                 <div className="space-y-4">
-                  {Object.entries(settings.notifications).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900 capitalize">
-                          {key.replace(/([A-Z])/g, " $1").trim()}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {getNotificationDescription(key)}
-                        </p>
+                  {Object.entries(settings.notifications).map(
+                    ([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div>
+                          <h4 className="font-medium text-gray-900 capitalize">
+                            {key.replace(/([A-Z])/g, " $1").trim()}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {getNotificationDescription(key)}
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={value}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "notifications",
+                                key,
+                                e.target.checked
+                              )
+                            }
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={value}
-                          onChange={(e) =>
-                            handleInputChange("notifications", key, e.target.checked)
-                          }
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               )}
 
@@ -587,7 +667,11 @@ export default function SettingsTab() {
                         type="number"
                         value={settings.security.sessionTimeoutMinutes.toString()}
                         onChange={(e) =>
-                          handleInputChange("security", "sessionTimeoutMinutes", parseInt(e.target.value))
+                          handleInputChange(
+                            "security",
+                            "sessionTimeoutMinutes",
+                            parseInt(e.target.value)
+                          )
                         }
                         min="15"
                         max="480"
@@ -601,7 +685,11 @@ export default function SettingsTab() {
                         type="number"
                         value={settings.security.maxLoginAttempts.toString()}
                         onChange={(e) =>
-                          handleInputChange("security", "maxLoginAttempts", parseInt(e.target.value))
+                          handleInputChange(
+                            "security",
+                            "maxLoginAttempts",
+                            parseInt(e.target.value)
+                          )
                         }
                         min="3"
                         max="10"
@@ -617,7 +705,11 @@ export default function SettingsTab() {
                       type="number"
                       value={settings.security.passwordMinLength.toString()}
                       onChange={(e) =>
-                        handleInputChange("security", "passwordMinLength", parseInt(e.target.value))
+                        handleInputChange(
+                          "security",
+                          "passwordMinLength",
+                          parseInt(e.target.value)
+                        )
                       }
                       min="6"
                       max="20"
@@ -629,7 +721,8 @@ export default function SettingsTab() {
                       {
                         key: "requireEmailVerification",
                         label: "Require Email Verification",
-                        description: "Users must verify their email before accessing the platform",
+                        description:
+                          "Users must verify their email before accessing the platform",
                       },
                       {
                         key: "enableTwoFactorAuth",
@@ -642,17 +735,32 @@ export default function SettingsTab() {
                         description: "Enforce complex password requirements",
                       },
                     ].map((setting) => (
-                      <div key={setting.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div
+                        key={setting.key}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
                         <div>
-                          <h4 className="font-medium text-gray-900">{setting.label}</h4>
-                          <p className="text-sm text-gray-600">{setting.description}</p>
+                          <h4 className="font-medium text-gray-900">
+                            {setting.label}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {setting.description}
+                          </p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={settings.security[setting.key as keyof typeof settings.security] as boolean}
+                            checked={
+                              settings.security[
+                                setting.key as keyof typeof settings.security
+                              ] as boolean
+                            }
                             onChange={(e) =>
-                              handleInputChange("security", setting.key, e.target.checked)
+                              handleInputChange(
+                                "security",
+                                setting.key,
+                                e.target.checked
+                              )
                             }
                             className="sr-only peer"
                           />
@@ -677,7 +785,11 @@ export default function SettingsTab() {
                           type="color"
                           value={settings.appearance.primaryColor}
                           onChange={(e) =>
-                            handleInputChange("appearance", "primaryColor", e.target.value)
+                            handleInputChange(
+                              "appearance",
+                              "primaryColor",
+                              e.target.value
+                            )
                           }
                           className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
                         />
@@ -685,7 +797,11 @@ export default function SettingsTab() {
                           type="text"
                           value={settings.appearance.primaryColor}
                           onChange={(e) =>
-                            handleInputChange("appearance", "primaryColor", e.target.value)
+                            handleInputChange(
+                              "appearance",
+                              "primaryColor",
+                              e.target.value
+                            )
                           }
                           className="flex-1"
                         />
@@ -700,7 +816,11 @@ export default function SettingsTab() {
                           type="color"
                           value={settings.appearance.secondaryColor}
                           onChange={(e) =>
-                            handleInputChange("appearance", "secondaryColor", e.target.value)
+                            handleInputChange(
+                              "appearance",
+                              "secondaryColor",
+                              e.target.value
+                            )
                           }
                           className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
                         />
@@ -708,7 +828,11 @@ export default function SettingsTab() {
                           type="text"
                           value={settings.appearance.secondaryColor}
                           onChange={(e) =>
-                            handleInputChange("appearance", "secondaryColor", e.target.value)
+                            handleInputChange(
+                              "appearance",
+                              "secondaryColor",
+                              e.target.value
+                            )
                           }
                           className="flex-1"
                         />
@@ -726,7 +850,8 @@ export default function SettingsTab() {
                       {
                         key: "compactMode",
                         label: "Compact Mode",
-                        description: "Use a more compact layout to show more content",
+                        description:
+                          "Use a more compact layout to show more content",
                       },
                       {
                         key: "showAnimations",
@@ -734,17 +859,32 @@ export default function SettingsTab() {
                         description: "Enable smooth animations and transitions",
                       },
                     ].map((setting) => (
-                      <div key={setting.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div
+                        key={setting.key}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
                         <div>
-                          <h4 className="font-medium text-gray-900">{setting.label}</h4>
-                          <p className="text-sm text-gray-600">{setting.description}</p>
+                          <h4 className="font-medium text-gray-900">
+                            {setting.label}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {setting.description}
+                          </p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={settings.appearance[setting.key as keyof typeof settings.appearance] as boolean}
+                            checked={
+                              settings.appearance[
+                                setting.key as keyof typeof settings.appearance
+                              ] as boolean
+                            }
                             onChange={(e) =>
-                              handleInputChange("appearance", setting.key, e.target.checked)
+                              handleInputChange(
+                                "appearance",
+                                setting.key,
+                                e.target.checked
+                              )
                             }
                             className="sr-only peer"
                           />
@@ -756,19 +896,25 @@ export default function SettingsTab() {
 
                   {/* Color Preview */}
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-3">Color Preview</h4>
+                    <h4 className="font-medium text-gray-900 mb-3">
+                      Color Preview
+                    </h4>
                     <div className="flex space-x-4">
                       <div className="flex items-center space-x-2">
                         <div
                           className="w-8 h-8 rounded-lg border border-gray-300"
-                          style={{ backgroundColor: settings.appearance.primaryColor }}
+                          style={{
+                            backgroundColor: settings.appearance.primaryColor,
+                          }}
                         ></div>
                         <span className="text-sm text-gray-600">Primary</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div
                           className="w-8 h-8 rounded-lg border border-gray-300"
-                          style={{ backgroundColor: settings.appearance.secondaryColor }}
+                          style={{
+                            backgroundColor: settings.appearance.secondaryColor,
+                          }}
                         ></div>
                         <span className="text-sm text-gray-600">Secondary</span>
                       </div>

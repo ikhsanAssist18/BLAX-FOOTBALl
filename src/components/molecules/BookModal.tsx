@@ -157,11 +157,8 @@ export default function BookModal({
 
     try {
       const payload = createBookingPayload();
-      console.log("Booking payload:", payload);
 
       const response = await bookingService.bookSlot(payload);
-
-      console.log("response booking", response);
 
       // Extract payment ID from response
       if (response) {

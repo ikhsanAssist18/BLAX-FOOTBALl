@@ -8,7 +8,6 @@ const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/booking`;
 class BookingService {
   async bookSlot(data: bookingRequest) {
     const encrypt = await encryptWithPublicKey(data);
-    console.log("encrypt", encrypt);
     const session = await AuthService.getSession();
 
     const finalPayload = {

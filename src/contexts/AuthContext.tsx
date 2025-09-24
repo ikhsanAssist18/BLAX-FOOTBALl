@@ -40,8 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const session = await AuthService.getSession();
 
-      console.log("object", session);
-
       if (!session || !session.access_token) {
         setLoading(false);
         return;

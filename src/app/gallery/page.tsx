@@ -14,6 +14,7 @@ import {
   List,
   Heart,
   ExternalLink,
+  XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { GalleryPhoto, GalleryCategory } from "@/types/gallery";
@@ -148,7 +149,9 @@ export default function GalleryPage() {
       filtered = filtered.filter(
         (photo) =>
           photo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          photo.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          photo.description
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
           photo.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
           photo.tags.some((tag) =>
             tag.toLowerCase().includes(searchQuery.toLowerCase())
@@ -158,7 +161,9 @@ export default function GalleryPage() {
 
     // Category filter
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((photo) => photo.category === selectedCategory);
+      filtered = filtered.filter(
+        (photo) => photo.category === selectedCategory
+      );
     }
 
     // Venue filter
@@ -209,8 +214,7 @@ export default function GalleryPage() {
     categories: categories.length,
     venues: new Set(photos.map((p) => p.venue)).size,
     thisMonth: photos.filter(
-      (p) =>
-        new Date(p.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      (p) => new Date(p.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     ).length,
   };
 
@@ -228,8 +232,8 @@ export default function GalleryPage() {
               Gameplay Gallery
             </h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Explore exciting moments from our football community. See the action, 
-              passion, and camaraderie that makes our games special.
+              Explore exciting moments from our football community. See the
+              action, passion, and camaraderie that makes our games special.
             </p>
           </div>
 
@@ -239,8 +243,12 @@ export default function GalleryPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Photos</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalPhotos}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Total Photos
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.totalPhotos}
+                    </p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-lg">
                     <Camera className="w-6 h-6 text-blue-600" />
@@ -253,8 +261,12 @@ export default function GalleryPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Categories</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.categories}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Categories
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.categories}
+                    </p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-lg">
                     <Grid3X3 className="w-6 h-6 text-green-600" />
@@ -268,7 +280,9 @@ export default function GalleryPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Venues</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.venues}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.venues}
+                    </p>
                   </div>
                   <div className="p-3 bg-purple-100 rounded-lg">
                     <MapPin className="w-6 h-6 text-purple-600" />
@@ -281,8 +295,12 @@ export default function GalleryPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Month</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.thisMonth}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      This Month
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.thisMonth}
+                    </p>
                   </div>
                   <div className="p-3 bg-orange-100 rounded-lg">
                     <Calendar className="w-6 h-6 text-orange-600" />
@@ -357,21 +375,32 @@ export default function GalleryPage() {
               </div>
 
               {/* Active Filters */}
-              {(searchQuery || selectedCategory !== "all" || selectedVenue !== "all") && (
+              {(searchQuery ||
+                selectedCategory !== "all" ||
+                selectedVenue !== "all") && (
                 <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
                   <p className="text-sm text-gray-600 mr-2">Active filters:</p>
                   {searchQuery && (
-                    <Badge variant="default" className="bg-blue-100 text-blue-800">
+                    <Badge
+                      variant="default"
+                      className="bg-blue-100 text-blue-800"
+                    >
                       Search: {searchQuery}
                     </Badge>
                   )}
                   {selectedCategory !== "all" && (
-                    <Badge variant="default" className="bg-blue-100 text-blue-800">
+                    <Badge
+                      variant="default"
+                      className="bg-blue-100 text-blue-800"
+                    >
                       Category: {selectedCategory}
                     </Badge>
                   )}
                   {selectedVenue !== "all" && (
-                    <Badge variant="default" className="bg-blue-100 text-blue-800">
+                    <Badge
+                      variant="default"
+                      className="bg-blue-100 text-blue-800"
+                    >
                       Venue: {selectedVenue}
                     </Badge>
                   )}
@@ -396,7 +425,9 @@ export default function GalleryPage() {
                   No photos found
                 </h3>
                 <p className="text-gray-600">
-                  {searchQuery || selectedCategory !== "all" || selectedVenue !== "all"
+                  {searchQuery ||
+                  selectedCategory !== "all" ||
+                  selectedVenue !== "all"
                     ? "Try adjusting your search criteria"
                     : "No photos available at the moment"}
                 </p>
@@ -483,7 +514,7 @@ export default function GalleryPage() {
                 <Card
                   key={photo.id}
                   className="hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-                  onClick={() => handlePhotoClick(photo)}
+                  // onClick={() => handlePhotoClick(photo)}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-6">
@@ -581,7 +612,9 @@ export default function GalleryPage() {
                   </Badge>
                 </div>
                 {selectedPhoto.description && (
-                  <p className="text-gray-600 mb-4">{selectedPhoto.description}</p>
+                  <p className="text-gray-600 mb-4">
+                    {selectedPhoto.description}
+                  </p>
                 )}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -606,7 +639,9 @@ export default function GalleryPage() {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => window.open(selectedPhoto.imageUrl, "_blank")}
+                      onClick={() =>
+                        window.open(selectedPhoto.imageUrl, "_blank")
+                      }
                     >
                       <ExternalLink className="w-4 h-4 mr-1" />
                       View Full

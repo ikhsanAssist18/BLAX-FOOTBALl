@@ -136,8 +136,6 @@ export default function AuthModal({
           password: formData.password,
         });
 
-        console.log("response", response);
-
         // Save session and notify parent component
         if (response.data) {
           const decoded = await decodeJwt(response.data.accessToken);

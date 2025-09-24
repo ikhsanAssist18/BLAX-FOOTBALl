@@ -45,7 +45,6 @@ export default function PaymentChecker() {
       const response = await paymentService.checkPaymentStatus(
         bookingId.trim()
       );
-      console.log("response", response);
 
       if (response.data.status) {
         setPaymentStatus(response.data.status);

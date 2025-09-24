@@ -86,7 +86,6 @@ export class AuthService {
     isAdmin?: boolean;
   }) {
     if (typeof window !== "undefined") {
-      console.log("session utils", session);
       localStorage.setItem("auth_session", JSON.stringify(session));
     }
   }

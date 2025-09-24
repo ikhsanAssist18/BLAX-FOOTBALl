@@ -33,8 +33,6 @@ export default function Navbar({ useScrollEffect = false }: NavbarProps) {
 
   const { user, loading, signOut, setUser } = useAuth();
 
-  console.log("user data =>", user);
-
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
