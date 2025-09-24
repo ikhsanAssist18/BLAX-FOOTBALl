@@ -17,6 +17,7 @@ import Button from "../atoms/Button";
 import { Card, CardContent } from "../atoms/Card";
 import Badge from "../atoms/Badge";
 import { formatCurrency } from "@/lib/helper";
+import html2canvas from "html2canvas";
 
 interface PaymentPreviewData {
   bookingId: string;
@@ -24,7 +25,6 @@ interface PaymentPreviewData {
   paymentDate: string;
   paymentTime: string;
   paymentMethod: string;
-  transactionRef: string;
   customerName: string;
   customerPhone: string;
   scheduleName: string;
@@ -49,9 +49,320 @@ export default function PaymentPreviewModal({
 }: PaymentPreviewModalProps) {
   if (!isOpen) return null;
 
-  const handleDownloadReceipt = () => {
-    // Implement receipt download functionality
-    console.log("Downloading receipt for:", paymentData?.bookingId);
+  const generateReceiptHTML = (data: PaymentPreviewData): string => {
+    return `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt - ${data.bookingId}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .receipt-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .receipt-header {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .receipt-header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .receipt-header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .receipt-body {
+            padding: 30px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #dcfce7;
+            color: #166534;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .amount-section {
+            text-align: center;
+            padding: 20px;
+            background: #f0fdf4;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 2px solid #bbf7d0;
+        }
+        
+        .amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #059669;
+            margin-bottom: 10px;
+        }
+        
+        .details-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .detail-group h3 {
+            color: #374151;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            color: #111827;
+            text-align: right;
+        }
+        
+        .booking-id {
+            font-family: 'Courier New', monospace;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .footer-section {
+            background: #f9fafb;
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        
+        .footer-section p {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .company-info {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .company-info h4 {
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .company-info p {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        
+        @media (max-width: 768px) {
+            .details-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .amount {
+                font-size: 28px;
+            }
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .receipt-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="receipt-header">
+            <h1>Payment Receipt</h1>
+            <p>Thank you for your booking</p>
+        </div>
+        
+        <div class="receipt-body">
+            <div style="text-align: center;">
+                <span class="status-badge">✓ Payment Confirmed</span>
+            </div>
+            
+            <div class="amount-section">
+                <div class="amount">${formatCurrency(data.amount)}</div>
+                <p style="color: #059669; font-weight: 600;">Successfully Paid</p>
+            </div>
+            
+            <div class="details-section">
+                <div class="detail-group">
+                    <h3>💳 Payment Information</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Booking ID</span>
+                        <span class="detail-value booking-id">${
+                          data.bookingId
+                        }</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Payment Method</span>
+                        <span class="detail-value">${data.paymentMethod}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Payment Date</span>
+                        <span class="detail-value">${data.paymentDate}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Payment Time</span>
+                        <span class="detail-value">${
+                          data.paymentTime
+                        } WIB</span>
+                    </div>
+                </div>
+                
+                <div class="detail-group">
+                    <h3>📅 Booking Details</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Customer Name</span>
+                        <span class="detail-value">${data.customerName}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Phone Number</span>
+                        <span class="detail-value">${data.customerPhone}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Schedule</span>
+                        <span class="detail-value">${data.scheduleName}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Venue</span>
+                        <span class="detail-value">${data.venue}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Match Date</span>
+                        <span class="detail-value">${new Date(
+                          data.matchDate
+                        ).toLocaleDateString("id-ID")}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Match Time</span>
+                        <span class="detail-value">${data.matchTime} WIB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-section">
+            <p><strong>Transaction completed successfully on ${
+              data.paymentDate
+            } at ${data.paymentTime} WIB</strong></p>
+            <p>Keep this receipt for your records</p>
+            
+            <div class="company-info">
+                <h4>Sports Booking System</h4>
+                <p>Customer Service: support@sportsbooking.com</p>
+                <p>Phone: +62 xxx-xxx-xxxx</p>
+                <p>Thank you for choosing our service!</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!paymentData) return;
+
+    try {
+      // Buat container sementara untuk HTML receipt
+      const tempContainer = document.createElement("div");
+      tempContainer.innerHTML = generateReceiptHTML(paymentData);
+      document.body.appendChild(tempContainer);
+
+      const receiptElement = tempContainer.querySelector(
+        ".receipt-container"
+      ) as HTMLElement;
+
+      if (!receiptElement) throw new Error("Receipt element not found");
+
+      // Render ke canvas pakai html2canvas
+      const canvas = await html2canvas(receiptElement, {
+        scale: 2, // biar hasilnya lebih tajam
+      });
+
+      // Convert canvas ke PNG
+      const dataUrl = canvas.toDataURL("image/png");
+
+      // Download PNG
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `receipt-${
+        paymentData.bookingId
+      }-${paymentData.paymentDate.replace(/\//g, "-")}.png`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Bersihkan container sementara
+      document.body.removeChild(link);
+      document.body.removeChild(tempContainer);
+
+      console.log(
+        "Receipt PNG downloaded successfully for:",
+        paymentData.bookingId
+      );
+    } catch (error) {
+      console.error("Error downloading receipt:", error);
+      alert("Failed to download receipt. Please try again.");
+    }
   };
 
   const handleViewFullDetails = () => {
@@ -135,34 +446,33 @@ export default function PaymentPreviewModal({
                           <CreditCard className="w-5 h-5 mr-2 text-green-600" />
                           Payment Information
                         </h3>
-                        
+
                         <div className="space-y-3">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Booking ID</span>
+                            <span className="text-sm text-gray-600">
+                              Booking ID
+                            </span>
                             <span className="font-mono text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
                               {paymentData.bookingId}
                             </span>
                           </div>
-                          
+
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Payment Method</span>
+                            <span className="text-sm text-gray-600">
+                              Payment Method
+                            </span>
                             <span className="font-medium text-gray-900">
                               {paymentData.paymentMethod}
                             </span>
                           </div>
-                          
+
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Transaction Ref</span>
-                            <span className="font-mono text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                              {paymentData.transactionRef}
+                            <span className="text-sm text-gray-600">
+                              Payment Date
                             </span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Payment Date</span>
                             <div className="text-right">
                               <div className="font-medium text-gray-900">
-                                {new Date(paymentData.paymentDate).toLocaleDateString("id-ID")}
+                                {paymentData.paymentDate}
                               </div>
                               <div className="text-sm text-gray-500">
                                 {paymentData.paymentTime} WIB
@@ -178,7 +488,7 @@ export default function PaymentPreviewModal({
                           <Calendar className="w-5 h-5 mr-2 text-blue-600" />
                           Booking Details
                         </h3>
-                        
+
                         <div className="space-y-3">
                           <div className="flex items-center space-x-3">
                             <User className="w-4 h-4 text-blue-600" />
@@ -191,7 +501,7 @@ export default function PaymentPreviewModal({
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center space-x-3">
                             <MapPin className="w-4 h-4 text-blue-600" />
                             <div>
@@ -203,12 +513,14 @@ export default function PaymentPreviewModal({
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center space-x-3">
                             <Clock className="w-4 h-4 text-blue-600" />
                             <div>
                               <div className="font-medium text-gray-900">
-                                {new Date(paymentData.matchDate).toLocaleDateString("id-ID")}
+                                {new Date(
+                                  paymentData.matchDate
+                                ).toLocaleDateString("id-ID")}
                               </div>
                               <div className="text-sm text-gray-600">
                                 {paymentData.matchTime} WIB
@@ -228,10 +540,12 @@ export default function PaymentPreviewModal({
                     Booking Confirmed!
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    Your payment has been processed successfully. You will receive a confirmation message shortly.
+                    Your payment has been processed successfully. You will
+                    receive a confirmation message shortly.
                   </p>
                   <div className="text-sm text-gray-500">
-                    Transaction completed on {new Date(paymentData.paymentDate).toLocaleDateString("id-ID")} at {paymentData.paymentTime} WIB
+                    Transaction completed on {paymentData.paymentDate} at{" "}
+                    {paymentData.paymentTime} WIB
                   </div>
                 </div>
               </div>
@@ -259,7 +573,7 @@ export default function PaymentPreviewModal({
             >
               Close
             </Button>
-            
+
             {paymentData && (
               <div className="flex space-x-3">
                 <Button
@@ -269,14 +583,6 @@ export default function PaymentPreviewModal({
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Receipt
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleViewFullDetails}
-                  className="flex items-center"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View Full Details
                 </Button>
               </div>
             )}

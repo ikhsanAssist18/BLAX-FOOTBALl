@@ -1,19 +1,23 @@
 export interface PaymentStatus {
-  imageBase64: string;
+  imageBase64?: string;
   name: string;
   phone: string;
   total: number;
   bookId: string;
   status: string;
+  paymentDate: string;
+  paymentTime: string;
+  matchDate: string;
+  matchTime: string;
+  scheduleName: string;
+  venue: string;
   id: string;
 }
 export interface PaymentCheckResponse {
   status: boolean;
   statusCode: number;
   message: string;
-  data: {
-    status: PaymentStatus;
-  };
+  data: PaymentStatus;
 }
 
 export interface PaymentCheckRequest {
