@@ -11,6 +11,8 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
+  DragOverEvent,
+  rectIntersection,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -18,11 +20,25 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 import {
-  useSortable,
-  CSS,
-} from "@dnd-kit/sortable";
-import { Plus, CreditCard as Edit, Trash2, GripVertical, Users, Trophy, Star, Clock, MapPin, Calendar, Save, RefreshCw, Eye, Download, Upload } from "lucide-react";
+  Plus,
+  CreditCard as Edit,
+  Trash2,
+  GripVertical,
+  Users,
+  Trophy,
+  Star,
+  Clock,
+  MapPin,
+  Calendar,
+  Save,
+  RefreshCw,
+  Eye,
+  Download,
+  Upload,
+  Loader2,
+} from "lucide-react";
 import Button from "../atoms/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../atoms/Card";
 import {
@@ -36,6 +52,7 @@ import Badge from "../atoms/Badge";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import { useNotifications } from "./NotificationContainer";
 import { formatDate } from "@/lib/helper";
+import { CSS } from "@dnd-kit/utilities";
 
 // Types
 interface LineupPlayer {
@@ -63,6 +80,25 @@ interface LineupMatch {
   updatedAt: string;
 }
 
+// Droppable Team Container Component
+interface DroppableTeamProps {
+  team: "A" | "B";
+  children: React.ReactNode;
+  isOver?: boolean;
+}
+
+function DroppableTeam({ team, children, isOver }: DroppableTeamProps) {
+  return (
+    <div
+      className={`min-h-[200px] transition-all duration-200 ${
+        isOver ? "ring-2 ring-blue-500 ring-opacity-50 bg-blue-50" : ""
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
 // Sortable Item Component
 interface SortableItemProps {
   player: LineupPlayer;
@@ -71,7 +107,12 @@ interface SortableItemProps {
   disabled?: boolean;
 }
 
-function SortableItem({ player, onEdit, onDelete, disabled }: SortableItemProps) {
+function SortableItem({
+  player,
+  onEdit,
+  onDelete,
+  disabled,
+}: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -112,16 +153,20 @@ function SortableItem({ player, onEdit, onDelete, disabled }: SortableItemProps)
         {/* Player Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-              player.position === "GK" 
-                ? "bg-gradient-to-r from-yellow-400 to-orange-500" 
-                : "bg-gradient-to-r from-blue-400 to-blue-500"
-            }`}>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                player.position === "GK"
+                  ? "bg-gradient-to-r from-yellow-400 to-orange-500"
+                  : "bg-gradient-to-r from-blue-400 to-blue-500"
+              }`}
+            >
               {player.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
-                <p className="font-medium text-gray-900 truncate">{player.name}</p>
+                <p className="font-medium text-gray-900 truncate">
+                  {player.name}
+                </p>
                 <Badge
                   className={`text-xs ${
                     player.position === "GK"
@@ -139,7 +184,9 @@ function SortableItem({ player, onEdit, onDelete, disabled }: SortableItemProps)
               </div>
               <p className="text-sm text-gray-600">{player.phone}</p>
               {player.notes && (
-                <p className="text-xs text-gray-500 italic mt-1">{player.notes}</p>
+                <p className="text-xs text-gray-500 italic mt-1">
+                  {player.notes}
+                </p>
               )}
             </div>
           </div>
@@ -183,15 +230,17 @@ function DragOverlayItem({ player }: { player: LineupPlayer | null }) {
   if (!player) return null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg ring-2 ring-blue-500 ring-opacity-50">
+    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg ring-2 ring-blue-500 ring-opacity-50 transform rotate-3">
       <div className="flex items-center space-x-4">
         <GripVertical className="w-5 h-5 text-gray-400" />
         <div className="flex items-center space-x-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-            player.position === "GK" 
-              ? "bg-gradient-to-r from-yellow-400 to-orange-500" 
-              : "bg-gradient-to-r from-blue-400 to-blue-500"
-          }`}>
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+              player.position === "GK"
+                ? "bg-gradient-to-r from-yellow-400 to-orange-500"
+                : "bg-gradient-to-r from-blue-400 to-blue-500"
+            }`}
+          >
             {player.name.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -217,7 +266,9 @@ function DragOverlayItem({ player }: { player: LineupPlayer | null }) {
 
 export default function LineupManagement() {
   const [lineups, setLineups] = useState<LineupMatch[]>([]);
-  const [selectedLineup, setSelectedLineup] = useState<LineupMatch | null>(null);
+  const [selectedLineup, setSelectedLineup] = useState<LineupMatch | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -229,6 +280,7 @@ export default function LineupManagement() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<LineupPlayer | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [overId, setOverId] = useState<string | null>(null);
 
   // Form state
   const [playerForm, setPlayerForm] = useState({
@@ -263,8 +315,8 @@ export default function LineupManagement() {
     try {
       setLoading(true);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Mock data
       const mockLineups: LineupMatch[] = [
         {
@@ -344,20 +396,26 @@ export default function LineupManagement() {
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveId(active.id as string);
-    
+
     // Find the dragged player
     const allPlayers = [
       ...(selectedLineup?.teamAPlayers || []),
       ...(selectedLineup?.teamBPlayers || []),
     ];
-    const player = allPlayers.find(p => p.id === active.id);
+    const player = allPlayers.find((p) => p.id === active.id);
     setDraggedPlayer(player || null);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { over } = event;
+    setOverId(over ? (over.id as string) : null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     setDraggedPlayer(null);
+    setOverId(null);
 
     if (!over || !selectedLineup) return;
 
@@ -366,43 +424,94 @@ export default function LineupManagement() {
 
     if (activeId === overId) return;
 
-    // Find which team the active and over items belong to
-    const activePlayer = [
+    // Find the active player
+    const allPlayers = [
       ...selectedLineup.teamAPlayers,
       ...selectedLineup.teamBPlayers,
-    ].find(p => p.id === activeId);
-
+    ];
+    const activePlayer = allPlayers.find((p) => p.id === activeId);
     if (!activePlayer) return;
 
-    const team = activePlayer.team;
-    const teamPlayers = team === "A" ? selectedLineup.teamAPlayers : selectedLineup.teamBPlayers;
-    
-    const oldIndex = teamPlayers.findIndex(p => p.id === activeId);
-    const newIndex = teamPlayers.findIndex(p => p.id === overId);
+    // Check if we're dropping on team container or another player
+    let targetTeam: "A" | "B" | null = null;
+    let targetIndex: number = -1;
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    // Check if dropping on team containers
+    if (overId === "team-A-container") {
+      targetTeam = "A";
+      targetIndex = selectedLineup.teamAPlayers.length;
+    } else if (overId === "team-B-container") {
+      targetTeam = "B";
+      targetIndex = selectedLineup.teamBPlayers.length;
+    } else {
+      // Dropping on another player
+      const overPlayer = allPlayers.find((p) => p.id === overId);
+      if (overPlayer) {
+        targetTeam = overPlayer.team;
+        const teamPlayers =
+          targetTeam === "A"
+            ? selectedLineup.teamAPlayers
+            : selectedLineup.teamBPlayers;
+        targetIndex = teamPlayers.findIndex((p) => p.id === overId);
+      }
+    }
 
-    const newPlayers = arrayMove(teamPlayers, oldIndex, newIndex);
-    
-    // Update order numbers
-    const updatedPlayers = newPlayers.map((player, index) => ({
-      ...player,
-      order: index + 1,
-    }));
+    if (targetTeam === null || targetIndex === -1) return;
 
-    // Update the lineup
-    const updatedLineup = {
-      ...selectedLineup,
-      [team === "A" ? "teamAPlayers" : "teamBPlayers"]: updatedPlayers,
-    };
+    // Create updated lineup
+    let updatedLineup = { ...selectedLineup };
+
+    // Remove player from current team
+    if (activePlayer.team === "A") {
+      updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.filter(
+        (p) => p.id !== activeId
+      );
+    } else {
+      updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.filter(
+        (p) => p.id !== activeId
+      );
+    }
+
+    // Update player's team
+    const updatedPlayer = { ...activePlayer, team: targetTeam };
+
+    // Add player to target team at target index
+    if (targetTeam === "A") {
+      updatedLineup.teamAPlayers.splice(targetIndex, 0, updatedPlayer);
+    } else {
+      updatedLineup.teamBPlayers.splice(targetIndex, 0, updatedPlayer);
+    }
+
+    // Update order numbers for both teams
+    updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.map(
+      (player, index) => ({
+        ...player,
+        order: index + 1,
+      })
+    );
+
+    updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.map(
+      (player, index) => ({
+        ...player,
+        order: index + 1,
+      })
+    );
+
+    // Update total players
+    updatedLineup.totalPlayers =
+      updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
 
     setSelectedLineup(updatedLineup);
     setHasUnsavedChanges(true);
-    
+
     // Update in lineups array
-    setLineups(prev => prev.map(lineup => 
-      lineup.id === selectedLineup.id ? updatedLineup : lineup
-    ));
+    setLineups((prev) =>
+      prev.map((lineup) =>
+        lineup.id === selectedLineup.id ? updatedLineup : lineup
+      )
+    );
+
+    showSuccess(`Player moved to Team ${targetTeam}`);
   };
 
   const validatePlayerForm = (): boolean => {
@@ -453,9 +562,10 @@ export default function LineupManagement() {
       if (editingPlayer) {
         // Update existing player
         const updatedLineup = { ...selectedLineup };
-        const teamKey = editingPlayer.team === "A" ? "teamAPlayers" : "teamBPlayers";
-        
-        updatedLineup[teamKey] = updatedLineup[teamKey].map(player =>
+        const teamKey =
+          editingPlayer.team === "A" ? "teamAPlayers" : "teamBPlayers";
+
+        updatedLineup[teamKey] = updatedLineup[teamKey].map((player) =>
           player.id === editingPlayer.id
             ? {
                 ...player,
@@ -469,10 +579,12 @@ export default function LineupManagement() {
         );
 
         setSelectedLineup(updatedLineup);
-        setLineups(prev => prev.map(lineup => 
-          lineup.id === selectedLineup.id ? updatedLineup : lineup
-        ));
-        
+        setLineups((prev) =>
+          prev.map((lineup) =>
+            lineup.id === selectedLineup.id ? updatedLineup : lineup
+          )
+        );
+
         showSuccess("Player updated successfully");
       } else {
         // Add new player
@@ -488,18 +600,22 @@ export default function LineupManagement() {
         };
 
         const updatedLineup = { ...selectedLineup };
-        const teamKey = playerForm.team === "A" ? "teamAPlayers" : "teamBPlayers";
-        
+        const teamKey =
+          playerForm.team === "A" ? "teamAPlayers" : "teamBPlayers";
+
         // Set order based on current team size
         newPlayer.order = updatedLineup[teamKey].length + 1;
         updatedLineup[teamKey] = [...updatedLineup[teamKey], newPlayer];
-        updatedLineup.totalPlayers = updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
+        updatedLineup.totalPlayers =
+          updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
 
         setSelectedLineup(updatedLineup);
-        setLineups(prev => prev.map(lineup => 
-          lineup.id === selectedLineup.id ? updatedLineup : lineup
-        ));
-        
+        setLineups((prev) =>
+          prev.map((lineup) =>
+            lineup.id === selectedLineup.id ? updatedLineup : lineup
+          )
+        );
+
         showSuccess("Player added successfully");
       }
 
@@ -516,35 +632,42 @@ export default function LineupManagement() {
 
     try {
       const updatedLineup = { ...selectedLineup };
-      
+
       // Remove from team A
       updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.filter(
-        p => p.id !== playerToDelete
+        (p) => p.id !== playerToDelete
       );
-      
+
       // Remove from team B
       updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.filter(
-        p => p.id !== playerToDelete
+        (p) => p.id !== playerToDelete
       );
 
       // Reorder remaining players
-      updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.map((player, index) => ({
-        ...player,
-        order: index + 1,
-      }));
-      
-      updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.map((player, index) => ({
-        ...player,
-        order: index + 1,
-      }));
+      updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.map(
+        (player, index) => ({
+          ...player,
+          order: index + 1,
+        })
+      );
 
-      updatedLineup.totalPlayers = updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
+      updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.map(
+        (player, index) => ({
+          ...player,
+          order: index + 1,
+        })
+      );
+
+      updatedLineup.totalPlayers =
+        updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
 
       setSelectedLineup(updatedLineup);
-      setLineups(prev => prev.map(lineup => 
-        lineup.id === selectedLineup.id ? updatedLineup : lineup
-      ));
-      
+      setLineups((prev) =>
+        prev.map((lineup) =>
+          lineup.id === selectedLineup.id ? updatedLineup : lineup
+        )
+      );
+
       setHasUnsavedChanges(true);
       setShowDeleteConfirm(false);
       setPlayerToDelete(null);
@@ -560,11 +683,11 @@ export default function LineupManagement() {
     try {
       setSaving(true);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // In real implementation, save to backend
       console.log("Saving lineup:", selectedLineup);
-      
+
       setHasUnsavedChanges(false);
       showSuccess("Lineup saved successfully");
     } catch (error) {
@@ -580,20 +703,28 @@ export default function LineupManagement() {
     try {
       setSaving(true);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const updatedLineup = {
         ...selectedLineup,
         status: "CONFIRMED" as const,
-        teamAPlayers: selectedLineup.teamAPlayers.map(p => ({ ...p, isConfirmed: true })),
-        teamBPlayers: selectedLineup.teamBPlayers.map(p => ({ ...p, isConfirmed: true })),
+        teamAPlayers: selectedLineup.teamAPlayers.map((p) => ({
+          ...p,
+          isConfirmed: true,
+        })),
+        teamBPlayers: selectedLineup.teamBPlayers.map((p) => ({
+          ...p,
+          isConfirmed: true,
+        })),
       };
 
       setSelectedLineup(updatedLineup);
-      setLineups(prev => prev.map(lineup => 
-        lineup.id === selectedLineup.id ? updatedLineup : lineup
-      ));
-      
+      setLineups((prev) =>
+        prev.map((lineup) =>
+          lineup.id === selectedLineup.id ? updatedLineup : lineup
+        )
+      );
+
       setHasUnsavedChanges(false);
       showSuccess("Lineup confirmed successfully");
     } catch (error) {
@@ -616,9 +747,9 @@ export default function LineupManagement() {
   };
 
   const handlePlayerInputChange = (field: string, value: string) => {
-    setPlayerForm(prev => ({ ...prev, [field]: value }));
+    setPlayerForm((prev) => ({ ...prev, [field]: value }));
     if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field]: "" }));
+      setFormErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -636,13 +767,15 @@ export default function LineupManagement() {
   };
 
   // Filter lineups
-  const filteredLineups = lineups.filter(lineup => {
-    const matchesSearch = !searchTerm || 
+  const filteredLineups = lineups.filter((lineup) => {
+    const matchesSearch =
+      !searchTerm ||
       lineup.scheduleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lineup.venue.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || lineup.status === statusFilter;
-    
+
+    const matchesStatus =
+      statusFilter === "all" || lineup.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
@@ -656,7 +789,7 @@ export default function LineupManagement() {
           </div>
           <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
             <div className="h-96 bg-gray-200 rounded-xl animate-pulse"></div>
@@ -675,7 +808,9 @@ export default function LineupManagement() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Lineup Management</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Lineup Management
+            </h2>
             <p className="text-gray-600 mt-1">
               Organize and manage player lineups for matches
             </p>
@@ -688,7 +823,7 @@ export default function LineupManagement() {
                 Unsaved changes
               </div>
             )}
-            
+
             <Button
               variant="outline"
               size="sm"
@@ -746,7 +881,7 @@ export default function LineupManagement() {
                       className="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
-                  
+
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
@@ -776,11 +911,15 @@ export default function LineupManagement() {
                           <h4 className="font-medium text-gray-900 text-sm truncate">
                             {lineup.scheduleName}
                           </h4>
-                          <Badge className={`text-xs ${getStatusColor(lineup.status)}`}>
+                          <Badge
+                            className={`text-xs ${getStatusColor(
+                              lineup.status
+                            )}`}
+                          >
                             {lineup.status}
                           </Badge>
                         </div>
-                        
+
                         <div className="space-y-1 text-xs text-gray-600">
                           <div className="flex items-center">
                             <MapPin className="w-3 h-3 mr-1" />
@@ -817,7 +956,7 @@ export default function LineupManagement() {
                 {/* Match Info Header */}
                 <Card className="border-blue-200 bg-blue-50/30">
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
+                    <div className="pt-4 flex items-center justify-between">
                       <div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">
                           {selectedLineup.scheduleName}
@@ -829,7 +968,8 @@ export default function LineupManagement() {
                           </div>
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 mr-1" />
-                            {formatDate(selectedLineup.date)} • {selectedLineup.time}
+                            {formatDate(selectedLineup.date)} •{" "}
+                            {selectedLineup.time}
                           </div>
                           <div className="flex items-center">
                             <Users className="w-4 h-4 mr-1" />
@@ -837,9 +977,11 @@ export default function LineupManagement() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-3">
-                        <Badge className={getStatusColor(selectedLineup.status)}>
+                        <Badge
+                          className={getStatusColor(selectedLineup.status)}
+                        >
                           {selectedLineup.status}
                         </Badge>
                         <Button
@@ -857,116 +999,172 @@ export default function LineupManagement() {
                   </CardContent>
                 </Card>
 
-                {/* Teams */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Team A */}
-                  <Card className="border-red-200 bg-red-50/30">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between text-red-900">
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 bg-red-500 rounded mr-2"></div>
-                          Team A
-                        </div>
-                        <Badge className="bg-red-100 text-red-800">
-                          {selectedLineup.teamAPlayers.length} players
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={selectedLineup.teamAPlayers.map(p => p.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <div className="space-y-3">
-                            {selectedLineup.teamAPlayers.map((player) => (
-                              <SortableItem
-                                key={player.id}
-                                player={player}
-                                onEdit={handleEditPlayer}
-                                onDelete={(id) => {
-                                  setPlayerToDelete(id);
-                                  setShowDeleteConfirm(true);
-                                }}
-                                disabled={selectedLineup.status === "COMPLETED"}
-                              />
-                            ))}
-                          </div>
-                        </SortableContext>
-                        
-                        <DragOverlay>
-                          <DragOverlayItem player={draggedPlayer} />
-                        </DragOverlay>
-                      </DndContext>
-
-                      {selectedLineup.teamAPlayers.length === 0 && (
-                        <div className="text-center py-8 border-2 border-dashed border-red-200 rounded-lg">
-                          <Users className="w-8 h-8 text-red-400 mx-auto mb-2" />
-                          <p className="text-red-600 text-sm">No players in Team A</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Team B */}
-                  <Card className="border-blue-200 bg-blue-50/30">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between text-blue-900">
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 bg-blue-500 rounded mr-2"></div>
-                          Team B
-                        </div>
-                        <Badge className="bg-blue-100 text-blue-800">
-                          {selectedLineup.teamBPlayers.length} players
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={selectedLineup.teamBPlayers.map(p => p.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <div className="space-y-3">
-                            {selectedLineup.teamBPlayers.map((player) => (
-                              <SortableItem
-                                key={player.id}
-                                player={player}
-                                onEdit={handleEditPlayer}
-                                onDelete={(id) => {
-                                  setPlayerToDelete(id);
-                                  setShowDeleteConfirm(true);
-                                }}
-                                disabled={selectedLineup.status === "COMPLETED"}
-                              />
-                            ))}
-                          </div>
-                        </SortableContext>
-                        
-                        <DragOverlay>
-                          <DragOverlayItem player={draggedPlayer} />
-                        </DragOverlay>
-                      </DndContext>
-
-                      {selectedLineup.teamBPlayers.length === 0 && (
-                        <div className="text-center py-8 border-2 border-dashed border-blue-200 rounded-lg">
-                          <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                          <p className="text-blue-600 text-sm">No players in Team B</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                {/* Enhanced info banner for drag and drop */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <GripVertical className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        Drag & Drop Enabled
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Drag players to reorder within teams or move between
+                        Team A and Team B
+                      </p>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Teams with Enhanced Drag & Drop */}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={rectIntersection}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Team A */}
+                    <Card className="border-red-200 bg-red-50/30">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between text-red-900">
+                          <div className="flex items-center">
+                            <div className="w-6 h-6 bg-red-500 rounded mr-2"></div>
+                            Team A
+                          </div>
+                          <Badge className="bg-red-100 text-red-800">
+                            {selectedLineup.teamAPlayers.length} players
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <DroppableTeam
+                          team="A"
+                          isOver={
+                            overId === "team-A-container" ||
+                            selectedLineup.teamAPlayers.some(
+                              (p) => p.id === overId
+                            )
+                          }
+                        >
+                          <SortableContext
+                            items={selectedLineup.teamAPlayers.map((p) => p.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div
+                              id="team-A-container"
+                              className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-all duration-200 ${
+                                overId === "team-A-container"
+                                  ? "bg-red-100/50 border-2 border-dashed border-red-300"
+                                  : "border-2 border-transparent"
+                              }`}
+                            >
+                              {selectedLineup.teamAPlayers.map((player) => (
+                                <SortableItem
+                                  key={player.id}
+                                  player={player}
+                                  onEdit={handleEditPlayer}
+                                  onDelete={(id) => {
+                                    setPlayerToDelete(id);
+                                    setShowDeleteConfirm(true);
+                                  }}
+                                  disabled={
+                                    selectedLineup.status === "COMPLETED"
+                                  }
+                                />
+                              ))}
+
+                              {selectedLineup.teamAPlayers.length === 0 && (
+                                <div className="text-center py-8 border-2 border-dashed border-red-200 rounded-lg">
+                                  <Users className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                                  <p className="text-red-600 text-sm">
+                                    No players in Team A
+                                  </p>
+                                  <p className="text-red-500 text-xs mt-1">
+                                    Drop players here to add them to Team A
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </SortableContext>
+                        </DroppableTeam>
+                      </CardContent>
+                    </Card>
+
+                    {/* Team B */}
+                    <Card className="border-blue-200 bg-blue-50/30">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between text-blue-900">
+                          <div className="flex items-center">
+                            <div className="w-6 h-6 bg-blue-500 rounded mr-2"></div>
+                            Team B
+                          </div>
+                          <Badge className="bg-blue-100 text-blue-800">
+                            {selectedLineup.teamBPlayers.length} players
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <DroppableTeam
+                          team="B"
+                          isOver={
+                            overId === "team-B-container" ||
+                            selectedLineup.teamBPlayers.some(
+                              (p) => p.id === overId
+                            )
+                          }
+                        >
+                          <SortableContext
+                            items={selectedLineup.teamBPlayers.map((p) => p.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div
+                              id="team-B-container"
+                              className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-all duration-200 ${
+                                overId === "team-B-container"
+                                  ? "bg-blue-100/50 border-2 border-dashed border-blue-300"
+                                  : "border-2 border-transparent"
+                              }`}
+                            >
+                              {selectedLineup.teamBPlayers.map((player) => (
+                                <SortableItem
+                                  key={player.id}
+                                  player={player}
+                                  onEdit={handleEditPlayer}
+                                  onDelete={(id) => {
+                                    setPlayerToDelete(id);
+                                    setShowDeleteConfirm(true);
+                                  }}
+                                  disabled={
+                                    selectedLineup.status === "COMPLETED"
+                                  }
+                                />
+                              ))}
+
+                              {selectedLineup.teamBPlayers.length === 0 && (
+                                <div className="text-center py-8 border-2 border-dashed border-blue-200 rounded-lg">
+                                  <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                                  <p className="text-blue-600 text-sm">
+                                    No players in Team B
+                                  </p>
+                                  <p className="text-blue-500 text-xs mt-1">
+                                    Drop players here to add them to Team B
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </SortableContext>
+                        </DroppableTeam>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <DragOverlay>
+                    <DragOverlayItem player={draggedPlayer} />
+                  </DragOverlay>
+                </DndContext>
               </div>
             ) : (
               <Card>
@@ -1001,7 +1199,9 @@ export default function LineupManagement() {
               <Input
                 type="text"
                 value={playerForm.name}
-                onChange={(e) => handlePlayerInputChange("name", e.target.value)}
+                onChange={(e) =>
+                  handlePlayerInputChange("name", e.target.value)
+                }
                 placeholder="Enter player name"
                 className={formErrors.name ? "border-red-500" : ""}
               />
@@ -1017,7 +1217,9 @@ export default function LineupManagement() {
               <Input
                 type="tel"
                 value={playerForm.phone}
-                onChange={(e) => handlePlayerInputChange("phone", e.target.value)}
+                onChange={(e) =>
+                  handlePlayerInputChange("phone", e.target.value)
+                }
                 placeholder="08xxxxxxxxxx"
                 className={formErrors.phone ? "border-red-500" : ""}
               />
@@ -1033,7 +1235,9 @@ export default function LineupManagement() {
                 </label>
                 <select
                   value={playerForm.position}
-                  onChange={(e) => handlePlayerInputChange("position", e.target.value)}
+                  onChange={(e) =>
+                    handlePlayerInputChange("position", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="PLAYER">Player</option>
@@ -1047,7 +1251,9 @@ export default function LineupManagement() {
                 </label>
                 <select
                   value={playerForm.team}
-                  onChange={(e) => handlePlayerInputChange("team", e.target.value)}
+                  onChange={(e) =>
+                    handlePlayerInputChange("team", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="A">Team A</option>
@@ -1062,7 +1268,9 @@ export default function LineupManagement() {
               </label>
               <textarea
                 value={playerForm.notes}
-                onChange={(e) => handlePlayerInputChange("notes", e.target.value)}
+                onChange={(e) =>
+                  handlePlayerInputChange("notes", e.target.value)
+                }
                 placeholder="Additional notes about the player..."
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
