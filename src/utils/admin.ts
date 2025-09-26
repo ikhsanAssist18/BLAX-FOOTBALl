@@ -2,6 +2,7 @@ import { ScheduleOverview } from "@/types/schedule";
 import { apiClient } from "./api";
 import { Roles, UserManagement } from "@/types/admin";
 import { News } from "@/types/news";
+import { AuthService } from "./auth";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/auth`;
 class AdminService {
@@ -73,10 +74,23 @@ class AdminService {
   }
 
   async createNews(
-    news: Omit<News, "id" | "publishAt" | "readTime">
+    newsData: FormData
   ): Promise<News | null> {
     try {
-      const response = await apiClient.post(`/api/v1/news/add-news`, news);
+      // For FormData, we need to use fetch directly with proper headers
+      const session = await AuthService.getSession();
+      const headers: HeadersInit = {};
+      
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/news/add-news`, {
+        method: "POST",
+        headers,
+        body: newsData,
+      });
+      
       const result = await response.json();
 
       if (!response.ok) {
@@ -86,6 +100,90 @@ class AdminService {
       return result.data;
     } catch (error) {
       return null;
+    }
+  }
+
+  async updateNews(
+    id: string,
+    newsData: FormData
+  ): Promise<News | null> {
+    try {
+      const session = await AuthService.getSession();
+      const headers: HeadersInit = {};
+      
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/news/update-news/${id}`, {
+        method: "PUT",
+        headers,
+        body: newsData,
+      });
+      
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Something went wrong!");
+      }
+
+      return result.data;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async createSchedule(scheduleData: FormData): Promise<any> {
+    try {
+      const session = await AuthService.getSession();
+      const headers: HeadersInit = {};
+      
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/matches/add-schedule`, {
+        method: "POST",
+        headers,
+        body: scheduleData,
+      });
+      
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Something went wrong!");
+      }
+
+      return result.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateSchedule(id: string, scheduleData: FormData): Promise<any> {
+    try {
+      const session = await AuthService.getSession();
+      const headers: HeadersInit = {};
+      
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/matches/update-schedule/${id}`, {
+        method: "PUT",
+        headers,
+        body: scheduleData,
+      });
+      
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Something went wrong!");
+      }
+
+      return result.data;
+    } catch (error) {
+      throw error;
     }
   }
 

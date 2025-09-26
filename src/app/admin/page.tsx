@@ -24,6 +24,7 @@ import MasterDataTab from "@/components/organisms/MasterDataTab";
 import ReportsTab from "@/components/organisms/ReportsTab";
 import SettingsTab from "@/components/organisms/SettingsTab";
 import BookingHistoryTab from "@/components/organisms/BookingHistoryTab";
+import LineupManagement from "@/components/organisms/LineupManagement";
 
 // Tabs Components
 function Tabs({ value, onValueChange, className, children }: any) {
@@ -218,7 +219,7 @@ export default function AdminPage() {
           onValueChange={setSelectedTab}
           className="space-y-6 transition-all duration-300"
         >
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-1 p-1">
             {/* <TabsTrigger
               value="overview"
               onClick={setSelectedTab}
@@ -244,6 +245,14 @@ export default function AdminPage() {
               className="text-xs md:text-sm"
             >
               Jadwal
+            </TabsTrigger>
+            <TabsTrigger
+              value="lineup"
+              onClick={setSelectedTab}
+              isActive={selectedTab === "lineup"}
+              className="text-xs md:text-sm"
+            >
+              Lineup
             </TabsTrigger>
             <TabsTrigger
               value="users"
@@ -324,6 +333,15 @@ export default function AdminPage() {
             className="space-y-6 transition-all duration-300 ease-in-out"
           >
             <ScheduleTab showError={showError} showSuccess={showSuccess} />
+          </TabsContent>
+
+          {/* Lineup Tab */}
+          <TabsContent
+            value="lineup"
+            activeTab={selectedTab}
+            className="space-y-6 transition-all duration-300 ease-in-out"
+          >
+            <LineupManagement />
           </TabsContent>
 
           {/* Users Tab */}

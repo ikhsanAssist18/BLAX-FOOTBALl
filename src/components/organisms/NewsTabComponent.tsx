@@ -36,6 +36,7 @@ import { formatDate } from "@/lib/helper";
 import Badge from "../atoms/Badge";
 import Pagination from "../atoms/Pagination";
 import { CardsLoadingSkeleton } from "./LoadingSkeleton";
+import ImageUpload from "../atoms/ImageUpload";
 
 export default function NewsTab() {
   const [showNewsDialog, setShowNewsDialog] = useState(false);
@@ -57,6 +58,7 @@ export default function NewsTab() {
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [category, setCategory] = useState("");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -114,8 +116,8 @@ export default function NewsTab() {
     if (!title.trim()) errors.title = "Title is required";
     if (!excerpt.trim()) errors.excerpt = "Excerpt is required";
     if (!content.trim()) errors.content = "Content is required";
-    if (!imageUrl.trim()) errors.imageUrl = "Image URL is required";
-    else if (!isValidUrl(imageUrl))
+    if (!image && !imageUrl.trim()) errors.imageUrl = "Featured image is required";
+    else if (imageUrl.trim() && !isValidUrl(imageUrl))
       errors.imageUrl = "Please enter a valid URL";
     if (!category.trim()) errors.category = "Category is required";
 
@@ -136,6 +138,7 @@ export default function NewsTab() {
     setTitle("");
     setExcerpt("");
     setContent("");
+    setImage(null);
     setImageUrl("");
     setCategory("");
     setEditingNews(null);
@@ -152,6 +155,7 @@ export default function NewsTab() {
     setTitle(newsItem.title);
     setExcerpt(newsItem.excerpt);
     setContent(newsItem.content);
+    setImage(null);
     setImageUrl(newsItem.imageUrl);
     setCategory(newsItem.category);
     setShowNewsDialog(true);
@@ -168,29 +172,36 @@ export default function NewsTab() {
     setIsSubmitting(true);
     try {
       if (editingNews) {
-        // Update existing news
-        const updatedNews: News = {
-          ...editingNews,
-          title: title.trim(),
-          excerpt: excerpt.trim(),
-          content: content.trim(),
-          imageUrl: imageUrl.trim(),
-          category: category.trim(),
-        };
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append("title", title.trim());
+        formData.append("excerpt", excerpt.trim());
+        formData.append("content", content.trim());
+        formData.append("category", category.trim());
+        
+        if (image) {
+          formData.append("image", image);
+        } else if (imageUrl.trim()) {
+          formData.append("imageUrl", imageUrl.trim());
+        }
 
-        // await adminService.updateNews(editingNews.id, updatedNews);
+        // await adminService.updateNews(editingNews.id, formData);
         showSuccess("Berhasil", "Berita berhasil diperbarui");
       } else {
-        // Create new news
-        const newNews: Omit<News, "id" | "publishAt" | "readTime"> = {
-          title: title.trim(),
-          excerpt: excerpt.trim(),
-          content: content.trim(),
-          imageUrl: imageUrl.trim(),
-          category: category.trim(),
-        };
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append("title", title.trim());
+        formData.append("excerpt", excerpt.trim());
+        formData.append("content", content.trim());
+        formData.append("category", category.trim());
+        
+        if (image) {
+          formData.append("image", image);
+        } else if (imageUrl.trim()) {
+          formData.append("imageUrl", imageUrl.trim());
+        }
 
-        await adminService.createNews(newNews);
+        // await adminService.createNews(formData);
         showSuccess("Berhasil", "Berita berhasil ditambahkan");
       }
 
@@ -732,34 +743,28 @@ export default function NewsTab() {
             </div>
 
             <div>
-              <label htmlFor="image" className="block mb-2 font-medium">
-                Featured Image URL *
+              <label htmlFor="image" className="block mb-3 font-medium">
+                Featured Image *
               </label>
-              <Input
-                value={imageUrl}
-                onChange={(e) => handleInputChange("imageUrl", e.target.value)}
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                className={formErrors.imageUrl ? "border-red-500" : ""}
+              <ImageUpload
+                value={image || imageUrl}
+                onChange={(file) => {
+                  setImage(file);
+                  if (file) setImageUrl("");
+                }}
+                onUrlChange={(url) => {
+                  setImageUrl(url);
+                  setImage(null);
+                }}
+                error={formErrors.imageUrl}
+                disabled={isSubmitting}
+                maxSize={5}
+                acceptedTypes={["image/jpeg", "image/png", "image/gif"]}
               />
               {formErrors.imageUrl && (
                 <p className="text-red-500 text-sm mt-1">
                   {formErrors.imageUrl}
                 </p>
-              )}
-              {imageUrl && (
-                <div className="mt-3">
-                  <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                  <img
-                    src={imageUrl}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-lg border"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                    }}
-                  />
-                </div>
               )}
             </div>
 

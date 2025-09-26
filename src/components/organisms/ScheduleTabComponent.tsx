@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   Download,
   Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import Button from "@/components/atoms/Button";
 import { Card, CardContent } from "@/components/atoms/Card";
@@ -44,6 +45,7 @@ import { formatDate } from "@/lib/helper";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import Pagination from "../atoms/Pagination";
 import { TableLoadingSkeleton } from "./LoadingSkeleton";
+import ImageUpload from "../atoms/ImageUpload";
 
 interface ScheduleTabProps {
   showError: (title: string, message: string) => void;
@@ -153,6 +155,8 @@ export default function ScheduleTab({
     typeEvent: "",
     typeMatch: "",
     description: "",
+    image: null as File | null,
+    imageUrl: "",
     facilityIds: [] as string[],
     ruleIds: [] as string[],
   });
@@ -265,6 +269,11 @@ export default function ScheduleTab({
     if (!scheduleForm.feeGk) errors.feeGk = "Goalkeeper fee is required";
     if (!scheduleForm.typeEvent) errors.typeEvent = "Event type is required";
     if (!scheduleForm.typeMatch) errors.typeMatch = "Match type is required";
+    
+    // Image validation
+    if (!scheduleForm.image && !scheduleForm.imageUrl) {
+      errors.image = "Match image is required";
+    }
 
     // Validate numeric fields
     if (scheduleForm.feePlayer && isNaN(Number(scheduleForm.feePlayer))) {
@@ -318,8 +327,34 @@ export default function ScheduleTab({
 
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add all form fields
+      formData.append("name", scheduleForm.name);
+      formData.append("date", scheduleForm.date);
+      formData.append("time", scheduleForm.time);
+      formData.append("venueId", scheduleForm.venueId);
+      formData.append("totalSlots", scheduleForm.totalSlots);
+      formData.append("feePlayer", scheduleForm.feePlayer);
+      formData.append("feeGk", scheduleForm.feeGk);
+      formData.append("typeEvent", scheduleForm.typeEvent);
+      formData.append("typeMatch", scheduleForm.typeMatch);
+      formData.append("description", scheduleForm.description);
+      
+      // Add image file or URL
+      if (scheduleForm.image) {
+        formData.append("image", scheduleForm.image);
+      } else if (scheduleForm.imageUrl) {
+        formData.append("imageUrl", scheduleForm.imageUrl);
+      }
+      
+      // Add facility and rule IDs
+      scheduleForm.facilityIds.forEach(id => formData.append("facilityIds[]", id));
+      scheduleForm.ruleIds.forEach(id => formData.append("ruleIds[]", id));
+
+      // Simulate API call with FormData
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       if (editingSchedule) {
         showSuccess("Schedule updated successfully!");
@@ -349,6 +384,8 @@ export default function ScheduleTab({
       typeEvent: "",
       typeMatch: "",
       description: "",
+      image: null,
+      imageUrl: "",
       facilityIds: [],
       ruleIds: [],
     });
@@ -373,6 +410,8 @@ export default function ScheduleTab({
       typeEvent: "Open",
       typeMatch: "Futsal",
       description: "",
+      image: null,
+      imageUrl: "",
       facilityIds: [],
       ruleIds: [],
     });
@@ -1048,6 +1087,36 @@ export default function ScheduleTab({
               </div>
             </div>
 
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium mb-3">
+                Match Image
+              </label>
+              <ImageUpload
+                value={scheduleForm.image || scheduleForm.imageUrl}
+                onChange={(file) => {
+                  setScheduleForm(prev => ({ 
+                    ...prev, 
+                    image: file,
+                    imageUrl: file ? "" : prev.imageUrl
+                  }));
+                }}
+                onUrlChange={(url) => {
+                  setScheduleForm(prev => ({ 
+                    ...prev, 
+                    imageUrl: url,
+                    image: null
+                  }));
+                }}
+                error={formErrors.image}
+                disabled={isSubmitting}
+                maxSize={5}
+                acceptedTypes={["image/jpeg", "image/png", "image/gif"]}
+              />
+              {formErrors.image && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.image}</p>
+              )}
+            </div>
             {/* Facilities */}
             <div>
               <label className="block text-sm font-medium mb-3">
