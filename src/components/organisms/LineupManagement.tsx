@@ -22,23 +22,7 @@ import {
   useSortable,
   CSS,
 } from "@dnd-kit/sortable";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  GripVertical,
-  Users,
-  Trophy,
-  Star,
-  Clock,
-  MapPin,
-  Calendar,
-  Save,
-  RefreshCw,
-  Eye,
-  Download,
-  Upload,
-} from "lucide-react";
+import { Plus, CreditCard as Edit, Trash2, GripVertical, Users, Trophy, Star, Clock, MapPin, Calendar, Save, RefreshCw, Eye, Download, Upload } from "lucide-react";
 import Button from "../atoms/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../atoms/Card";
 import {

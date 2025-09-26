@@ -1,22 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Clock,
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Filter,
-  Eye,
-  Calendar,
-  Tag,
-  Image as ImageIcon,
-  FileText,
-  Download,
-  Upload,
-  MoreHorizontal,
-} from "lucide-react";
+import { Clock, Plus, CreditCard as Edit, Trash2, Search, Filter, Eye, Calendar, Tag, Image as ImageIcon, FileText, Download, Upload, MoreHorizontal } from "lucide-react";
 import Button from "../atoms/Button";
 import RichTextEditor from "../atoms/RichTextEditor";
 import {
@@ -116,8 +101,8 @@ export default function NewsTab() {
     if (!title.trim()) errors.title = "Title is required";
     if (!excerpt.trim()) errors.excerpt = "Excerpt is required";
     if (!content.trim()) errors.content = "Content is required";
-    if (!image && !imageUrl.trim()) errors.imageUrl = "Featured image is required";
-    else if (imageUrl.trim() && !isValidUrl(imageUrl))
+    if (!imageUrl.trim()) errors.imageUrl = "Image URL is required";
+    else if (!isValidUrl(imageUrl))
       errors.imageUrl = "Please enter a valid URL";
     if (!category.trim()) errors.category = "Category is required";
 

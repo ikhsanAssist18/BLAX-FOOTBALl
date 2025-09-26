@@ -1,23 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Filter,
-  Calendar,
-  Clock,
-  MapPin,
-  Users,
-  DollarSign,
-  Eye,
-  MoreHorizontal,
-  Download,
-  Upload,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Plus, CreditCard as Edit, Trash2, Search, Filter, Calendar, Clock, MapPin, Users, DollarSign, Eye, MoreHorizontal, Download, Upload, Image as ImageIcon } from "lucide-react";
 import Button from "@/components/atoms/Button";
 import { Card, CardContent } from "@/components/atoms/Card";
 import {
@@ -269,11 +253,6 @@ export default function ScheduleTab({
     if (!scheduleForm.feeGk) errors.feeGk = "Goalkeeper fee is required";
     if (!scheduleForm.typeEvent) errors.typeEvent = "Event type is required";
     if (!scheduleForm.typeMatch) errors.typeMatch = "Match type is required";
-    
-    // Image validation
-    if (!scheduleForm.image && !scheduleForm.imageUrl) {
-      errors.image = "Match image is required";
-    }
 
     // Validate numeric fields
     if (scheduleForm.feePlayer && isNaN(Number(scheduleForm.feePlayer))) {
