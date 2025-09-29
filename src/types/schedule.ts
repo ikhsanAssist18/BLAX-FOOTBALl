@@ -32,6 +32,7 @@ export interface Rules {
 }
 
 export interface ScheduleOverview {
+  id: string;
   date: string;
   time: string;
   feeGk: number;

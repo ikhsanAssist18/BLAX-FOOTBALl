@@ -24,6 +24,12 @@ import {
 import Button from "../atoms/Button";
 import Badge from "../atoms/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../atoms/Card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../atoms/Dialog";
 import { useNotifications } from "./NotificationContainer";
 import { formatCurrency, formatDate } from "@/lib/helper";
 import LoadingSpinner from "../atoms/LoadingSpinner";
@@ -60,6 +66,7 @@ interface BookingDetail {
 
 interface BookingHistoryDetailProps {
   bookingId: string;
+  open: boolean;
   onClose: () => void;
   onRefresh?: () => void;
 }
@@ -106,6 +113,7 @@ const mockBookingDetail: BookingDetail = {
 
 export default function BookingHistoryDetail({
   bookingId,
+  open,
   onClose,
   onRefresh,
 }: BookingHistoryDetailProps) {
@@ -115,15 +123,17 @@ export default function BookingHistoryDetail({
   const { showSuccess, showError } = useNotifications();
 
   useEffect(() => {
-    fetchBookingDetail();
-  }, [bookingId]);
+    if (open) {
+      fetchBookingDetail();
+    }
+  }, [bookingId, open]);
 
   const fetchBookingDetail = async () => {
     try {
       setLoading(true);
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       // In real implementation, fetch from API
       // const response = await bookingService.getBookingDetail(bookingId);
       setBooking(mockBookingDetail);
@@ -206,405 +216,430 @@ export default function BookingHistoryDetail({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full">
-          <LoadingSpinner size="lg" text="Loading booking details..." />
-        </div>
-      </div>
-    );
-  }
-
-  if (!booking) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Booking Not Found
-          </h3>
-          <p className="text-gray-600 mb-6">
-            The booking details could not be loaded.
-          </p>
-          <Button onClick={onClose} variant="primary">
-            Close
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="hover:bg-white/50"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Booking Details
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Booking ID: {booking.bookingId}
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex items-center"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleDownloadReceipt}
-                className="flex items-center"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Receipt
-              </Button>
-            </div>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="w-full max-w-4xl p-0 max-h-[90vh] overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center">
+            <LoadingSpinner size="lg" text="Loading booking details..." />
           </div>
+        ) : !booking ? (
+          <div className="p-8 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Booking Not Found
+            </h3>
+            <p className="text-gray-600 mb-6">
+              The booking details could not be loaded.
+            </p>
+            <Button onClick={onClose} variant="primary">
+              Close
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <DialogHeader className="flex items-center justify-between border-b border-gray-200 mb-0">
+              <div className="flex items-center space-x-4">
+                <Button size="sm" variant="outline" onClick={onClose}>
+                  Close
+                </Button>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-gray-900 mb-1">
+                    Booking Details
+                  </DialogTitle>
+                  <p className="text-sm text-gray-600">
+                    Booking ID: {booking.bookingId}
+                  </p>
+                </div>
+              </div>
 
-          {/* Content */}
-          <div className="p-6 max-h-[70vh] overflow-y-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Customer Information */}
-              <Card className="border-blue-200 bg-blue-50/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-blue-900">
-                    <User className="w-5 h-5 mr-2" />
-                    Customer Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {booking.customerName.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{booking.customerName}</p>
-                      <p className="text-sm text-gray-600">Customer</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 mr-2 ${
+                      refreshing ? "animate-spin" : ""
+                    }`}
+                  />
+                  Refresh
+                </Button>
+                <Button
+                  variant="black"
+                  size="sm"
+                  onClick={handleDownloadReceipt}
+                  className="flex items-center"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Receipt
+                </Button>
+              </div>
+            </DialogHeader>
+
+            {/* Content */}
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Customer Information */}
+                <Card className="border-blue-200 bg-blue-50/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-blue-900">
+                      <User className="w-5 h-5 mr-2" />
+                      Customer Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="flex items-center space-x-3">
-                      <Phone className="w-4 h-4 text-blue-600" />
-                      <span className="text-gray-700">{booking.customerPhone}</span>
-                    </div>
-                    {booking.customerEmail && (
-                      <div className="flex items-center space-x-3">
-                        <Mail className="w-4 h-4 text-blue-600" />
-                        <span className="text-gray-700">{booking.customerEmail}</span>
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
+                        {booking.customerName.charAt(0).toUpperCase()}
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Booking Information */}
-              <Card className="border-green-200 bg-green-50/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-green-900">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Booking Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Booking Type</p>
-                      <p className="font-semibold text-gray-900">{booking.bookingType}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Player Count</p>
-                      <p className="font-semibold text-gray-900">{booking.playerCount}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Player Type</p>
-                      <div className="flex space-x-2">
-                        {booking.isPlayer && (
-                          <Badge className="bg-blue-100 text-blue-800">Player</Badge>
-                        )}
-                        {booking.isGk && (
-                          <Badge className="bg-yellow-100 text-yellow-800">GK</Badge>
-                        )}
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {booking.customerName}
+                        </p>
+                        <p className="text-sm text-gray-600">Customer</p>
                       </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Total Amount</p>
-                      <p className="font-bold text-green-600 text-lg">
-                        {formatCurrency(booking.totalAmount)}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Payment Status</p>
-                      <Badge
-                        className={`flex items-center space-x-1 ${getStatusColor(
-                          booking.paymentStatus,
-                          "payment"
-                        )}`}
-                      >
-                        {getStatusIcon(booking.paymentStatus, "payment")}
-                        <span>{booking.paymentStatus}</span>
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Booking Status</p>
-                      <Badge
-                        className={`flex items-center space-x-1 ${getStatusColor(
-                          booking.bookingStatus,
-                          "booking"
-                        )}`}
-                      >
-                        {getStatusIcon(booking.bookingStatus, "booking")}
-                        <span>{booking.bookingStatus}</span>
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Schedule Information */}
-              <Card className="border-purple-200 bg-purple-50/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-purple-900">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Schedule Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">{booking.scheduleName}</h4>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center space-x-3">
-                        <MapPin className="w-4 h-4 text-purple-600" />
-                        <div>
-                          <p className="font-medium text-gray-900">{booking.venue}</p>
-                          <p className="text-sm text-gray-600">{booking.address}</p>
+                        <Phone className="w-4 h-4 text-blue-600" />
+                        <span className="text-gray-700">
+                          {booking.customerPhone}
+                        </span>
+                      </div>
+                      {booking.customerEmail && (
+                        <div className="flex items-center space-x-3">
+                          <Mail className="w-4 h-4 text-blue-600" />
+                          <span className="text-gray-700">
+                            {booking.customerEmail}
+                          </span>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Clock className="w-4 h-4 text-purple-600" />
-                        <span className="text-gray-700">
-                          {formatDate(booking.date)} • {booking.time} WIB
-                        </span>
-                      </div>
+                      )}
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Event Type</p>
-                      <Badge className="bg-purple-100 text-purple-800">
-                        {booking.typeEvent}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Match Type</p>
-                      <Badge className="bg-indigo-100 text-indigo-800">
-                        {booking.typeMatch}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Payment Information */}
-              <Card className="border-orange-200 bg-orange-50/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-orange-900">
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Payment Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Payment ID</p>
-                      <p className="font-mono text-sm text-gray-900">
-                        {booking.paymentId || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Payment Method</p>
-                      <p className="font-semibold text-gray-900">
-                        {booking.paymentMethod || "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Amount Breakdown</p>
-                    <div className="bg-white rounded-lg p-3 border border-orange-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-700">
-                          {booking.playerCount} {booking.isGk ? "GK" : "Player"}(s)
-                        </span>
-                        <span className="font-semibold text-gray-900">
-                          {formatCurrency(booking.totalAmount)}
-                        </span>
+                {/* Booking Information */}
+                <Card className="border-green-200 bg-green-50/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-green-900">
+                      <Calendar className="w-5 h-5 mr-2" />
+                      Booking Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Booking Type</p>
+                        <p className="font-semibold text-gray-900">
+                          {booking.bookingType}
+                        </p>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Facilities & Rules */}
-              <Card className="lg:col-span-2 border-teal-200 bg-teal-50/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-teal-900">
-                    <FileText className="w-5 h-5 mr-2" />
-                    Facilities & Rules
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Facilities */}
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">Available Facilities</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {booking.facilities.map((facility, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center space-x-2 p-2 bg-white rounded-lg border border-teal-200"
-                          >
-                            <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-teal-800">
-                              {facility.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Rules */}
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">Match Rules</h4>
-                      <div className="space-y-2">
-                        {booking.rules.map((rule, index) => (
-                          <div key={index} className="flex items-start space-x-2">
-                            <div className="w-5 h-5 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-xs font-medium mt-0.5 flex-shrink-0">
-                              {index + 1}
-                            </div>
-                            <p className="text-sm text-gray-700 flex-1">
-                              {rule.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Timeline */}
-              <Card className="lg:col-span-2 border-gray-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900">
-                    <Clock className="w-5 h-5 mr-2" />
-                    Booking Timeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">Booking Created</p>
-                        <p className="text-sm text-gray-600">
-                          {new Date(booking.createdAt).toLocaleString("id-ID")}
+                      <div>
+                        <p className="text-sm text-gray-600">Player Count</p>
+                        <p className="font-semibold text-gray-900">
+                          {booking.playerCount}
                         </p>
                       </div>
                     </div>
 
-                    {booking.paymentStatus === "PAID" && (
-                      <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <DollarSign className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">Payment Completed</p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(booking.updatedAt).toLocaleString("id-ID")}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {booking.bookingStatus === "CONFIRMED" && (
-                      <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">Booking Confirmed</p>
-                          <p className="text-sm text-gray-600">Ready for match day</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Player Type</p>
+                        <div className="flex space-x-2">
+                          {booking.isPlayer && (
+                            <Badge className="bg-blue-100 text-blue-800">
+                              Player
+                            </Badge>
+                          )}
+                          {booking.isGk && (
+                            <Badge className="bg-yellow-100 text-yellow-800">
+                              GK
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      <div>
+                        <p className="text-sm text-gray-600">Total Amount</p>
+                        <p className="font-bold text-green-600 text-lg">
+                          {formatCurrency(booking.totalAmount)}
+                        </p>
+                      </div>
+                    </div>
 
-              {/* Additional Notes */}
-              {booking.notes && (
-                <Card className="lg:col-span-2 border-gray-200">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Payment Status</p>
+                        <Badge
+                          className={`flex items-center space-x-1 ${getStatusColor(
+                            booking.paymentStatus,
+                            "payment"
+                          )}`}
+                        >
+                          {getStatusIcon(booking.paymentStatus, "payment")}
+                          <span>{booking.paymentStatus}</span>
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Booking Status</p>
+                        <Badge
+                          className={`flex items-center space-x-1 ${getStatusColor(
+                            booking.bookingStatus,
+                            "booking"
+                          )}`}
+                        >
+                          {getStatusIcon(booking.bookingStatus, "booking")}
+                          <span>{booking.bookingStatus}</span>
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Schedule Information */}
+                <Card className="border-purple-200 bg-purple-50/30">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-gray-900">
+                    <CardTitle className="flex items-center text-purple-900">
+                      <Calendar className="w-5 h-5 mr-2" />
+                      Schedule Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">
+                        {booking.scheduleName}
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3">
+                          <MapPin className="w-4 h-4 text-purple-600" />
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {booking.venue}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {booking.address}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Clock className="w-4 h-4 text-purple-600" />
+                          <span className="text-gray-700">
+                            {formatDate(booking.date)} • {booking.time} WIB
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Event Type</p>
+                        <Badge className="bg-purple-100 text-purple-800">
+                          {booking.typeEvent}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Match Type</p>
+                        <Badge className="bg-indigo-100 text-indigo-800">
+                          {booking.typeMatch}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Payment Information */}
+                <Card className="border-orange-200 bg-orange-50/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-orange-900">
+                      <CreditCard className="w-5 h-5 mr-2" />
+                      Payment Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Payment ID</p>
+                        <p className="font-mono text-sm text-gray-900">
+                          {booking.paymentId || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Payment Method</p>
+                        <p className="font-semibold text-gray-900">
+                          {booking.paymentMethod || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        Amount Breakdown
+                      </p>
+                      <div className="bg-white rounded-lg p-3 border border-orange-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-700">
+                            {booking.playerCount}{" "}
+                            {booking.isGk ? "GK" : "Player"}(s)
+                          </span>
+                          <span className="font-semibold text-gray-900">
+                            {formatCurrency(booking.totalAmount)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Facilities & Rules */}
+                <Card className="lg:col-span-2 border-teal-200 bg-teal-50/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-teal-900">
                       <FileText className="w-5 h-5 mr-2" />
-                      Additional Notes
+                      Facilities & Rules
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
-                      {booking.notes}
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Facilities */}
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                          Available Facilities
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {booking.facilities.map((facility, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center space-x-2 p-2 bg-white rounded-lg border border-teal-200"
+                            >
+                              <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-teal-800">
+                                {facility.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Rules */}
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                          Match Rules
+                        </h4>
+                        <div className="space-y-2">
+                          {booking.rules.map((rule, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start space-x-2"
+                            >
+                              <div className="w-5 h-5 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-xs font-medium mt-0.5 flex-shrink-0">
+                                {index + 1}
+                              </div>
+                              <p className="text-sm text-gray-700 flex-1">
+                                {rule.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              )}
-            </div>
-          </div>
 
-          {/* Footer */}
-          <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-            <Button variant="primary" onClick={handleDownloadReceipt}>
-              <Download className="w-4 h-4 mr-2" />
-              Download Receipt
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+                {/* Timeline */}
+                <Card className="lg:col-span-2 border-gray-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-gray-900">
+                      <Clock className="w-5 h-5 mr-2" />
+                      Booking Timeline
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            Booking Created
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(booking.createdAt).toLocaleString(
+                              "id-ID"
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      {booking.paymentStatus === "PAID" && (
+                        <div className="flex items-center space-x-4">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <DollarSign className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">
+                              Payment Completed
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(booking.updatedAt).toLocaleString(
+                                "id-ID"
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {booking.bookingStatus === "CONFIRMED" && (
+                        <div className="flex items-center space-x-4">
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">
+                              Booking Confirmed
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Ready for match day
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Additional Notes */}
+                {booking.notes && (
+                  <Card className="lg:col-span-2 border-gray-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-gray-900">
+                        <FileText className="w-5 h-5 mr-2" />
+                        Additional Notes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                        {booking.notes}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

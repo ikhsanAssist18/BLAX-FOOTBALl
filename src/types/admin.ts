@@ -9,19 +9,6 @@ export interface AdminUser {
   };
 }
 
-export interface PolicyVerification {
-  id: string;
-  policy_id: string;
-  verified_by: string;
-  verification_notes?: string;
-  created_at: string;
-  policies?: {
-    app_name: string;
-    developer?: string;
-    is_verified: boolean;
-  };
-}
-
 export interface UserManagement {
   id: string;
   name: string;
@@ -31,17 +18,6 @@ export interface UserManagement {
   gamesPlayed: number;
   lastPlayed: string | null;
 }
-
-export interface ContentModeration {
-  id: string;
-  content_type: "policy" | "comment" | "user";
-  content_id: string;
-  action: "approve" | "reject" | "flag" | "ban";
-  reason?: string;
-  moderated_by: string;
-  created_at: string;
-}
-
 export interface AdminStats {
   totalPolicies: number;
   pendingVerification: number;
@@ -54,4 +30,43 @@ export interface AdminStats {
 export interface Roles {
   id: string;
   name: string;
+}
+
+export interface ReportBooking {
+  totalBooking: number;
+  totalRevenue: number;
+  totalPlayers: number;
+  schedules: ScheduleBookingReports[];
+}
+
+export interface ScheduleBookingReports {
+  scheduleId: string;
+  name: string;
+  date: string;
+  time: string;
+  venue: string;
+  typeMatch: string;
+  status: boolean;
+  players: number;
+  revenue: number;
+}
+
+export interface BookingHistory {
+  bookingId: string;
+  customerName: string;
+  customerPhone: string;
+  scheduleName: string;
+  venue: string;
+  date: string;
+  time: string;
+  bookingType: "INDIVIDUAL" | "TEAM";
+  playerCount: number;
+  totalAmount: number;
+  paymentStatus: "PENDING" | "PAID" | "FAILED" | "EXPIRED";
+  bookedAt: string;
+  paymentAt: string;
+  totalBookings: number;
+  confirmedStatus: number;
+  pendingStatus: number;
+  failedStatus: number;
 }

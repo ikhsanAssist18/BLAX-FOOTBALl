@@ -1,19 +1,10 @@
 export interface GalleryPhoto {
-  id: string;
-  title: string;
-  description?: string;
-  imageUrl: string;
-  thumbnailUrl?: string;
-  category: string;
-  venue: string;
+  name: string;
   date: string;
   time: string;
-  driveLink: string;
-  tags: string[];
-  uploadedBy: string;
-  isPublic: boolean;
-  createdAt: string;
-  updatedAt: string;
+  venue: string;
+  linkPhoto: string;
+  linkVideo: string;
 }
 
 export interface GalleryCategory {

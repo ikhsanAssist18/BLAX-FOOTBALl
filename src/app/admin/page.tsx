@@ -288,7 +288,7 @@ export default function AdminPage() {
               <span className="hidden md:inline">Fasilitas</span>
               <span className="md:hidden">Fas</span>
             </TabsTrigger> */}
-            <TabsTrigger
+            {/* <TabsTrigger
               value="settings"
               onClick={setSelectedTab}
               isActive={selectedTab === "settings"}
@@ -296,7 +296,7 @@ export default function AdminPage() {
             >
               <span className="hidden md:inline">Pengaturan</span>
               <span className="md:hidden">Set</span>
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger
               value="booking-history"
               onClick={setSelectedTab}

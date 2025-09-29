@@ -42,14 +42,16 @@ export const TableSkeleton = ({ rows = 5 }: { rows?: number }) => (
   </div>
 );
 
-export const CardGridSkeleton = ({ 
-  cols = 3, 
-  rows = 2 
-}: { 
-  cols?: number; 
-  rows?: number; 
+export const CardGridSkeleton = ({
+  cols = 3,
+  rows = 2,
+}: {
+  cols?: number;
+  rows?: number;
 }) => (
-  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${cols} gap-3 md:gap-6`}>
+  <div
+    className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${cols} gap-3 md:gap-6`}
+  >
     {[...Array(cols * rows)].map((_, i) => (
       <Card key={i} className="animate-pulse">
         <div className="relative overflow-hidden h-32 md:h-48 w-full bg-gray-200"></div>
@@ -129,10 +131,10 @@ export const HeaderSkeleton = () => (
 );
 
 // Comprehensive Loading Screen for entire tabs
-export const TabLoadingSkeleton = ({ 
-  type = "default" 
-}: { 
-  type?: "default" | "overview" | "table" | "cards" | "form" 
+export const TabLoadingSkeleton = ({
+  type = "default",
+}: {
+  type?: "default" | "overview" | "table" | "cards" | "form";
 }) => {
   switch (type) {
     case "overview":
@@ -160,7 +162,10 @@ export const TabLoadingSkeleton = ({
               <CardContent className="p-3 md:p-6 pt-0">
                 <div className="space-y-3 md:space-y-4">
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-3 md:space-x-4">
+                    <div
+                      key={i}
+                      className="flex items-center space-x-3 md:space-x-4"
+                    >
                       <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-200 rounded-full"></div>
                       <div className="flex-1 space-y-1 md:space-y-2">
                         <div className="h-3 md:h-4 bg-gray-200 rounded w-3/4"></div>
@@ -248,14 +253,8 @@ export const OverviewLoadingSkeleton = () => (
   <TabLoadingSkeleton type="overview" />
 );
 
-export const TableLoadingSkeleton = () => (
-  <TabLoadingSkeleton type="table" />
-);
+export const TableLoadingSkeleton = () => <TabLoadingSkeleton type="table" />;
 
-export const CardsLoadingSkeleton = () => (
-  <TabLoadingSkeleton type="cards" />
-);
+export const CardsLoadingSkeleton = () => <TabLoadingSkeleton type="cards" />;
 
-export const FormLoadingSkeleton = () => (
-  <TabLoadingSkeleton type="form" />
-);
+export const FormLoadingSkeleton = () => <TabLoadingSkeleton type="form" />;

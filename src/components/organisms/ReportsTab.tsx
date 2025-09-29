@@ -23,109 +23,89 @@ import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import autoTable from "jspdf-autotable";
-
-// Mock data for reports
-const mockReportData = {
-  bookings: [
-    {
-      id: "1",
-      date: "2025-01-15",
-      venue: "Lapangan Futsal Central",
-      players: 16,
-      revenue: 1200000,
-      status: "Completed",
-      type: "Futsal",
-    },
-    {
-      id: "2",
-      date: "2025-01-16",
-      venue: "GOR Senayan Mini Soccer",
-      players: 14,
-      revenue: 1050000,
-      status: "Completed",
-      type: "Mini Soccer",
-    },
-    {
-      id: "3",
-      date: "2025-01-17",
-      venue: "Lapangan Futsal Central",
-      players: 12,
-      revenue: 900000,
-      status: "Active",
-      type: "Futsal",
-    },
-    {
-      id: "4",
-      date: "2025-01-18",
-      venue: "GOR Senayan Mini Soccer",
-      players: 18,
-      revenue: 1350000,
-      status: "Completed",
-      type: "Mini Soccer",
-    },
-    {
-      id: "5",
-      date: "2025-01-19",
-      venue: "Lapangan Futsal Central",
-      players: 16,
-      revenue: 1200000,
-      status: "Active",
-      type: "Futsal",
-    },
-  ],
-  summary: {
-    totalBookings: 156,
-    totalRevenue: 45600000,
-    totalPlayers: 2847,
-    averageOccupancy: 87,
-    completedMatches: 89,
-    activeBookings: 23,
-  },
-  monthlyData: [
-    { month: "Jan", bookings: 45, revenue: 15200000 },
-    { month: "Feb", bookings: 52, revenue: 17800000 },
-    { month: "Mar", bookings: 48, revenue: 16400000 },
-    { month: "Apr", bookings: 59, revenue: 19200000 },
-    { month: "May", bookings: 61, revenue: 20100000 },
-    { month: "Jun", bookings: 55, revenue: 18300000 },
-  ],
-};
+import { ReportBooking } from "@/types/admin";
+import { adminService } from "@/utils/admin";
 
 export default function ReportsTab() {
   const [loading, setLoading] = useState(false);
-  const [dateRange, setDateRange] = useState("30d");
+  const [dateRange, setDateRange] = useState("7d");
   const [reportType, setReportType] = useState("bookings");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [reportData, setReportData] = useState(mockReportData);
+
+  // Initialize with last 7 days
+  const getDefaultDates = () => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    return {
+      startDate: sevenDaysAgo.toISOString().split("T")[0],
+      endDate: today.toISOString().split("T")[0],
+    };
+  };
+
+  console.log("getDefaultDates", getDefaultDates());
+
+  const [startDate, setStartDate] = useState(getDefaultDates().startDate);
+  const [endDate, setEndDate] = useState(getDefaultDates().endDate);
+  const [reportData, setReportData] = useState<ReportBooking | null>(null);
   const { showSuccess, showError } = useNotifications();
 
   useEffect(() => {
-    // Set default date range
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    setEndDate(today.toISOString().split("T")[0]);
-    setStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
+    handleRefreshData();
   }, []);
 
   const handleRefreshData = async () => {
+    if (!startDate || !endDate) return;
+
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log("=== DEBUG API CALL ===");
+      console.log("Original startDate:", startDate);
+      console.log("Original endDate:", endDate);
 
-      // In real implementation, fetch fresh data from API
-      setReportData(mockReportData);
-      showSuccess("Data refreshed successfully");
-    } catch (error) {
-      showError("Error", "Failed to refresh data");
+      console.log("Calling adminService.reportBooking...");
+
+      const reportResponse = await adminService.reportBooking(
+        startDate,
+        endDate
+      );
+
+      console.log("API Response:", reportResponse);
+
+      setReportData(reportResponse);
+      showSuccess("Data berhasil di-refresh");
+    } catch (error: any) {
+      console.error("=== API ERROR ===");
+      console.error("Error type:", error.constructor.name);
+      console.error("Error message:", error.message);
+      console.error("Full error:", error);
+
+      // Check if it's a network error
+      if (error.message.includes("fetch")) {
+        showError(
+          "Network Error",
+          "Tidak dapat terhubung ke server. Pastikan server berjalan di localhost:3100"
+        );
+      } else if (error.message.includes("404")) {
+        showError(
+          "API Not Found",
+          "Endpoint API tidak ditemukan. Periksa URL API"
+        );
+      } else if (error.message.includes("500")) {
+        showError("Server Error", "Server mengalami error internal");
+      } else {
+        showError("Error", `Gagal memuat data laporan: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const generatePDFReport = () => {
+    if (!reportData) {
+      showError("Error", "Tidak ada data untuk di-export");
+      return;
+    }
+
     try {
       const doc = new jsPDF();
 
@@ -145,18 +125,20 @@ export default function ReportsTab() {
       doc.text("Ringkasan", 20, 65);
 
       const summaryData = [
-        ["Total Booking", reportData.summary.totalBookings.toString()],
+        ["Total Booking", reportData.totalBooking.toString()],
         [
           "Total Pendapatan",
-          `Rp ${reportData.summary.totalRevenue.toLocaleString("id-ID")}`,
+          `Rp ${reportData.totalRevenue.toLocaleString("id-ID")}`,
         ],
-        ["Total Pemain", reportData.summary.totalPlayers.toString()],
-        ["Tingkat Hunian", `${reportData.summary.averageOccupancy}%`],
+        ["Total Pemain", reportData.totalPlayers.toString()],
         [
-          "Pertandingan Selesai",
-          reportData.summary.completedMatches.toString(),
+          "Jadwal Aktif",
+          reportData.schedules.filter((s) => s.status).length.toString(),
         ],
-        ["Booking Aktif", reportData.summary.activeBookings.toString()],
+        [
+          "Jadwal Selesai",
+          reportData.schedules.filter((s) => !s.status).length.toString(),
+        ],
       ];
 
       autoTable(doc, {
@@ -168,26 +150,37 @@ export default function ReportsTab() {
         margin: { left: 20, right: 20 },
       });
 
-      // Booking details
+      // Schedule details
       const lastY = doc.lastAutoTable?.finalY || 75;
 
       doc.setFontSize(14);
       doc.setTextColor(40, 40, 40);
-      doc.text("Detail Booking", 20, lastY + 20);
+      doc.text("Detail Jadwal", 20, lastY + 20);
 
-      const bookingData = reportData.bookings.map((booking) => [
-        booking.date,
-        booking.venue,
-        booking.type,
-        booking.players.toString(),
-        `Rp ${booking.revenue.toLocaleString("id-ID")}`,
-        booking.status,
+      const scheduleData = reportData.schedules.map((schedule) => [
+        new Date(schedule.date).toLocaleDateString("id-ID"),
+        schedule.name,
+        schedule.venue,
+        schedule.typeMatch,
+        schedule.players.toString(),
+        `Rp ${schedule.revenue.toLocaleString("id-ID")}`,
+        schedule.status ? "Aktif" : "Selesai",
       ]);
 
       autoTable(doc, {
         startY: lastY + 30,
-        head: [["Tanggal", "Venue", "Tipe", "Pemain", "Pendapatan", "Status"]],
-        body: bookingData,
+        head: [
+          [
+            "Tanggal",
+            "Nama",
+            "Venue",
+            "Tipe",
+            "Pemain",
+            "Pendapatan",
+            "Status",
+          ],
+        ],
+        body: scheduleData,
         theme: "grid",
         headStyles: { fillColor: [59, 130, 246] },
         margin: { left: 20, right: 20 },
@@ -209,17 +202,19 @@ export default function ReportsTab() {
       }
 
       doc.save(`blax-football-report-${startDate}-to-${endDate}.pdf`);
-      showSuccess(
-        "PDF Report Generated",
-        "Report has been downloaded successfully"
-      );
+      showSuccess("PDF Report Generated", "Report berhasil diunduh");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      showError("Export Error", "Failed to generate PDF report");
+      showError("Export Error", "Gagal membuat PDF report");
     }
   };
 
   const generateExcelReport = () => {
+    if (!reportData) {
+      showError("Error", "Tidak ada data untuk di-export");
+      return;
+    }
+
     try {
       // Create workbook
       const wb = XLSX.utils.book_new();
@@ -227,57 +222,49 @@ export default function ReportsTab() {
       // Summary sheet
       const summaryData = [
         ["Metrik", "Nilai"],
-        ["Total Booking", reportData.summary.totalBookings],
-        ["Total Pendapatan", reportData.summary.totalRevenue],
-        ["Total Pemain", reportData.summary.totalPlayers],
-        ["Tingkat Hunian (%)", reportData.summary.averageOccupancy],
-        ["Pertandingan Selesai", reportData.summary.completedMatches],
-        ["Booking Aktif", reportData.summary.activeBookings],
+        ["Total Booking", reportData.totalBooking],
+        ["Total Pendapatan", reportData.totalRevenue],
+        ["Total Pemain", reportData.totalPlayers],
+        ["Jadwal Aktif", reportData.schedules.filter((s) => s.status).length],
+        [
+          "Jadwal Selesai",
+          reportData.schedules.filter((s) => !s.status).length,
+        ],
       ];
 
       const summaryWS = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, summaryWS, "Ringkasan");
 
-      // Bookings sheet
-      const bookingHeaders = [
-        "ID",
+      // Schedule sheet
+      const scheduleHeaders = [
+        "ID Jadwal",
+        "Nama",
         "Tanggal",
+        "Waktu",
         "Venue",
-        "Tipe",
+        "Tipe Match",
+        "Status",
         "Jumlah Pemain",
         "Pendapatan",
-        "Status",
       ];
 
-      const bookingData = [
-        bookingHeaders,
-        ...reportData.bookings.map((booking) => [
-          booking.id,
-          booking.date,
-          booking.venue,
-          booking.type,
-          booking.players,
-          booking.revenue,
-          booking.status,
+      const scheduleData = [
+        scheduleHeaders,
+        ...reportData.schedules.map((schedule) => [
+          schedule.scheduleId,
+          schedule.name,
+          schedule.date,
+          schedule.time,
+          schedule.venue,
+          schedule.typeMatch,
+          schedule.status ? "Aktif" : "Selesai",
+          schedule.players,
+          schedule.revenue,
         ]),
       ];
 
-      const bookingWS = XLSX.utils.aoa_to_sheet(bookingData);
-      XLSX.utils.book_append_sheet(wb, bookingWS, "Detail Booking");
-
-      // Monthly data sheet
-      const monthlyHeaders = ["Bulan", "Total Booking", "Pendapatan"];
-      const monthlyData = [
-        monthlyHeaders,
-        ...reportData.monthlyData.map((data) => [
-          data.month,
-          data.bookings,
-          data.revenue,
-        ]),
-      ];
-
-      const monthlyWS = XLSX.utils.aoa_to_sheet(monthlyData);
-      XLSX.utils.book_append_sheet(wb, monthlyWS, "Data Bulanan");
+      const scheduleWS = XLSX.utils.aoa_to_sheet(scheduleData);
+      XLSX.utils.book_append_sheet(wb, scheduleWS, "Detail Jadwal");
 
       // Generate and save file
       const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -286,38 +273,72 @@ export default function ReportsTab() {
       });
 
       saveAs(data, `blax-football-report-${startDate}-to-${endDate}.xlsx`);
-      showSuccess(
-        "Excel Report Generated",
-        "Report has been downloaded successfully"
-      );
+      showSuccess("Excel Report Generated", "Report berhasil diunduh");
     } catch (error) {
       console.error("Error generating Excel:", error);
-      showError("Export Error", "Failed to generate Excel report");
+      showError("Export Error", "Gagal membuat Excel report");
     }
   };
 
   const handleDateRangeChange = (range: string) => {
     setDateRange(range);
-    const today = new Date();
-    let startDate: Date;
 
-    switch (range) {
-      case "7d":
-        startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case "30d":
-        startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case "90d":
-        startDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    if (range !== "custom") {
+      const today = new Date();
+      let startDate: Date;
+
+      switch (range) {
+        case "7d":
+          startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "30d":
+          startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case "90d":
+          startDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+
+      setStartDate(startDate.toISOString().split("T")[0]);
+      setEndDate(today.toISOString().split("T")[0]);
+    }
+  };
+
+  // Calculate derived statistics
+  const getStats = () => {
+    if (!reportData) {
+      return {
+        totalBooking: 0,
+        totalRevenue: 0,
+        totalPlayers: 0,
+        activeBookings: 0,
+        completedBookings: 0,
+        averageRevenue: 0,
+      };
     }
 
-    setStartDate(startDate.toISOString().split("T")[0]);
-    setEndDate(today.toISOString().split("T")[0]);
+    const activeBookings = reportData.schedules.filter((s) => s.status).length;
+    const completedBookings = reportData.schedules.filter(
+      (s) => !s.status
+    ).length;
+    const averageRevenue =
+      reportData.totalBooking > 0
+        ? reportData.totalRevenue / reportData.totalBooking
+        : 0;
+
+    return {
+      totalBooking: reportData.totalBooking,
+      totalRevenue: reportData.totalRevenue,
+      totalPlayers: reportData.totalPlayers,
+      activeBookings,
+      completedBookings,
+      averageRevenue,
+    };
   };
+
+  const stats = getStats();
 
   return (
     <div className="space-y-6">
@@ -348,6 +369,7 @@ export default function ReportsTab() {
             variant="danger"
             size="sm"
             onClick={generatePDFReport}
+            disabled={!reportData}
             className="flex items-center"
           >
             <FileText className="w-4 h-4 mr-2" />
@@ -358,6 +380,7 @@ export default function ReportsTab() {
             variant="black"
             size="sm"
             onClick={generateExcelReport}
+            disabled={!reportData}
             className="flex items-center bg-green-600 hover:bg-green-700"
           >
             <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -372,39 +395,39 @@ export default function ReportsTab() {
           <div className="pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Report Type
+                Tipe Laporan
               </label>
               <select
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="bookings">Booking Reports</option>
-                <option value="revenue">Revenue Reports</option>
-                <option value="users">User Activity</option>
-                <option value="venues">Venue Performance</option>
+                <option value="bookings">Laporan Booking</option>
+                <option value="revenue">Laporan Pendapatan</option>
+                <option value="users">Aktivitas User</option>
+                <option value="venues">Performa Venue</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date Range
+                Rentang Tanggal
               </label>
               <select
                 value={dateRange}
                 onChange={(e) => handleDateRangeChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
+                <option value="7d">7 hari terakhir</option>
+                <option value="30d">30 hari terakhir</option>
+                <option value="90d">90 hari terakhir</option>
                 <option value="custom">Custom Range</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                Tanggal Mulai
               </label>
               <input
                 type="date"
@@ -416,7 +439,7 @@ export default function ReportsTab() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
+                Tanggal Selesai
               </label>
               <input
                 type="date"
@@ -430,20 +453,21 @@ export default function ReportsTab() {
       </Card>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Total Bookings
+                  Total Booking
                 </p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {reportData.summary.totalBookings}
+                  {stats.totalBooking}
                 </p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +12% from last period
+                <p className="text-xs text-blue-600 flex items-center mt-1">
+                  <Activity className="w-3 h-3 mr-1" />
+                  {stats.activeBookings} aktif, {stats.completedBookings}{" "}
+                  selesai
                 </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -458,14 +482,15 @@ export default function ReportsTab() {
             <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Total Revenue
+                  Total Pendapatan
                 </p>
-                <p className="text-lg font-bold text-gray-900">
-                  Rp {(reportData.summary.totalRevenue / 1000000).toFixed(1)}M
+                <p className="text-3xl font-bold text-gray-900">
+                  Rp {(stats.totalRevenue / 1000000).toFixed(1)}M
                 </p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  +8% from last period
+                  Rata-rata: Rp {Math.round(stats.averageRevenue / 1000)}K per
+                  booking
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
@@ -480,14 +505,17 @@ export default function ReportsTab() {
             <div className="pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Total Players
+                  Total Pemain
                 </p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {reportData.summary.totalPlayers}
+                  {stats.totalPlayers}
                 </p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +15% from last period
+                <p className="text-xs text-purple-600 flex items-center mt-1">
+                  <Users className="w-3 h-3 mr-1" />
+                  {stats.totalBooking > 0
+                    ? Math.round(stats.totalPlayers / stats.totalBooking)
+                    : 0}{" "}
+                  rata-rata per sesi
                 </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -496,227 +524,106 @@ export default function ReportsTab() {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardContent className="p-6">
-            <div className="pt-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Occupancy Rate
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {reportData.summary.averageOccupancy}%
-                </p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +3% from last period
-                </p>
-              </div>
-              <div className="p-3 bg-indigo-100 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-indigo-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardContent className="p-6">
-            <div className="pt-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {reportData.summary.completedMatches}
-                </p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +18% from last period
-                </p>
-              </div>
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Activity className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardContent className="p-6">
-            <div className="pt-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Active Bookings
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {reportData.summary.activeBookings}
-                </p>
-                <p className="text-xs text-yellow-600 flex items-center mt-1">
-                  <Activity className="w-3 h-3 mr-1" />
-                  Needs attention
-                </p>
-              </div>
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Calendar className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Charts and Data Visualization */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Performance Chart */}
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Monthly Performance</span>
-              <BarChart3 className="w-5 h-5 text-gray-400" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500 font-medium">Interactive Chart</p>
-                <p className="text-sm text-gray-400">
-                  Monthly booking and revenue trends
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Top Venues */}
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Top Performing Venues</span>
-              <Eye className="w-5 h-5 text-gray-400" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                {
-                  name: "Lapangan Futsal Central",
-                  bookings: 45,
-                  revenue: 15200000,
-                },
-                {
-                  name: "GOR Senayan Mini Soccer",
-                  bookings: 38,
-                  revenue: 12800000,
-                },
-                {
-                  name: "Futsal Arena Jakarta",
-                  bookings: 32,
-                  revenue: 10400000,
-                },
-                { name: "Mini Soccer Plaza", bookings: 28, revenue: 9200000 },
-                { name: "Football Center BSD", bookings: 24, revenue: 8000000 },
-              ].map((venue, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{venue.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {venue.bookings} bookings
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-green-600">
-                      Rp {(venue.revenue / 1000000).toFixed(1)}M
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Detailed Booking Table */}
+      {/* Detailed Schedule Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Detailed Booking Report</CardTitle>
+          <CardTitle>Detail Laporan Jadwal</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Venue
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Players
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Revenue
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {reportData.bookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                        {new Date(booking.date).toLocaleDateString("id-ID")}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {booking.venue}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {booking.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Users className="w-4 h-4 text-gray-400 mr-2" />
-                        {booking.players}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-green-600">
-                        Rp {booking.revenue.toLocaleString("id-ID")}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          booking.status === "Completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {booking.status}
-                      </span>
-                    </td>
+          {loading ? (
+            <div className="flex justify-center items-center h-32">
+              <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+              <span className="ml-2 text-gray-600">Memuat data...</span>
+            </div>
+          ) : !reportData ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Belum ada data laporan</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tanggal
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Nama
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Venue
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipe
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pemain
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pendapatan
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {reportData.schedules.map((schedule) => (
+                    <tr key={schedule.scheduleId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                          {new Date(schedule.date).toLocaleDateString("id-ID")}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {schedule.time}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {schedule.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {schedule.venue}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {schedule.typeMatch}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Users className="w-4 h-4 text-gray-400 mr-2" />
+                          {schedule.players}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-green-600">
+                          Rp {schedule.revenue.toLocaleString("id-ID")}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            schedule.status
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {schedule.status ? "Aktif" : "Selesai"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -726,16 +633,17 @@ export default function ReportsTab() {
           <div className="pt-4 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                Export Options
+                Opsi Export
               </h3>
               <p className="text-blue-700 text-sm">
-                Generate comprehensive reports in your preferred format
+                Generate laporan komprehensif dalam format yang Anda inginkan
               </p>
             </div>
             <div className="flex space-x-3">
               <Button
                 variant="outline"
                 onClick={generatePDFReport}
+                disabled={!reportData}
                 className="border-blue-300 text-blue-700 hover:bg-blue-100"
               >
                 <FileText className="w-4 h-4 mr-2" />
@@ -744,6 +652,7 @@ export default function ReportsTab() {
               <Button
                 variant="outline"
                 onClick={generateExcelReport}
+                disabled={!reportData}
                 className="border-green-300 text-green-700 hover:bg-green-100"
               >
                 <FileSpreadsheet className="w-4 h-4 mr-2" />

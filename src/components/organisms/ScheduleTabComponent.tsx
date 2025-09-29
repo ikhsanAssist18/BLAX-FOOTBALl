@@ -1,7 +1,23 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, CreditCard as Edit, Trash2, Search, Filter, Calendar, Clock, MapPin, Users, DollarSign, Eye, MoreHorizontal, Download, Upload, Image as ImageIcon } from "lucide-react";
+import {
+  Plus,
+  CreditCard as Edit,
+  Trash2,
+  Search,
+  Filter,
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  DollarSign,
+  Eye,
+  MoreHorizontal,
+  Download,
+  Upload,
+  Image as ImageIcon,
+} from "lucide-react";
 import Button from "@/components/atoms/Button";
 import { Card, CardContent } from "@/components/atoms/Card";
 import {
@@ -127,12 +143,13 @@ export default function ScheduleTab({
   const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
   const [isLoadingRules, setIsLoadingRules] = useState(false);
 
-  // Form states for new/edit schedule
+  // Form states for new/edit schedule - removed imageUrl
   const [scheduleForm, setScheduleForm] = useState({
     name: "",
     date: "",
     time: "",
-    venueId: "", // Changed from venue to venueId
+    venueId: "",
+    totalTeams: "4",
     totalSlots: "16",
     feePlayer: "",
     feeGk: "",
@@ -140,7 +157,6 @@ export default function ScheduleTab({
     typeMatch: "",
     description: "",
     image: null as File | null,
-    imageUrl: "",
     facilityIds: [] as string[],
     ruleIds: [] as string[],
   });
@@ -245,14 +261,23 @@ export default function ScheduleTab({
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
+    // All fields are now required
     if (!scheduleForm.name.trim()) errors.name = "Schedule name is required";
     if (!scheduleForm.date) errors.date = "Date is required";
     if (!scheduleForm.time) errors.time = "Time is required";
     if (!scheduleForm.venueId) errors.venueId = "Venue is required";
+    if (!scheduleForm.totalSlots) errors.totalSlots = "Total slots is required";
     if (!scheduleForm.feePlayer) errors.feePlayer = "Player fee is required";
     if (!scheduleForm.feeGk) errors.feeGk = "Goalkeeper fee is required";
     if (!scheduleForm.typeEvent) errors.typeEvent = "Event type is required";
     if (!scheduleForm.typeMatch) errors.typeMatch = "Match type is required";
+    if (!scheduleForm.description.trim())
+      errors.description = "Description is required";
+    if (!scheduleForm.image) errors.image = "Match image is required";
+    if (scheduleForm.facilityIds.length === 0)
+      errors.facilityIds = "At least one facility must be selected";
+    if (scheduleForm.ruleIds.length === 0)
+      errors.ruleIds = "At least one rule must be selected";
 
     // Validate numeric fields
     if (scheduleForm.feePlayer && isNaN(Number(scheduleForm.feePlayer))) {
@@ -265,19 +290,64 @@ export default function ScheduleTab({
       errors.totalSlots = "Total slots must be a number";
     }
 
+    // Additional validation rules
+    if (
+      scheduleForm.totalSlots &&
+      (Number(scheduleForm.totalSlots) < 8 ||
+        Number(scheduleForm.totalSlots) > 22)
+    ) {
+      errors.totalSlots = "Total slots must be between 8 and 22";
+    }
+    if (scheduleForm.feePlayer && Number(scheduleForm.feePlayer) < 0) {
+      errors.feePlayer = "Player fee must be a positive number";
+    }
+    if (scheduleForm.feeGk && Number(scheduleForm.feeGk) < 0) {
+      errors.feeGk = "Goalkeeper fee must be a positive number";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleScheduleInputChange = (field: string, value: string) => {
-    setScheduleForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setScheduleForm((prev) => {
+      const updatedForm = {
+        ...prev,
+        [field]: value,
+      };
+
+      // Auto-calculate total slots when match type or total teams changes
+      if (field === "typeMatch" || field === "totalTeams") {
+        const slotsPerTeam = getSlotsPerTeam(
+          field === "typeMatch" ? value : prev.typeMatch
+        );
+        const teams = Number(field === "totalTeams" ? value : prev.totalTeams);
+
+        if (slotsPerTeam && teams) {
+          updatedForm.totalSlots = (slotsPerTeam * teams).toString();
+        }
+      }
+
+      return updatedForm;
+    });
 
     // Clear error when user starts typing
     if (formErrors[field]) {
       setFormErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  // Helper function to get slots per team based on match type
+  const getSlotsPerTeam = (matchType: string): number => {
+    switch (matchType) {
+      case "Futsal":
+        return 5;
+      case "Mini Soccer":
+        return 7;
+      case "Football":
+        return 11;
+      default:
+        return 0;
     }
   };
 
@@ -288,6 +358,11 @@ export default function ScheduleTab({
         ? [...prev.facilityIds, facilityId]
         : prev.facilityIds.filter((id) => id !== facilityId),
     }));
+
+    // Clear facility error when user selects/deselects
+    if (formErrors.facilityIds) {
+      setFormErrors((prev) => ({ ...prev, facilityIds: "" }));
+    }
   };
 
   const handleRuleChange = (ruleId: string, checked: boolean) => {
@@ -297,6 +372,11 @@ export default function ScheduleTab({
         ? [...prev.ruleIds, ruleId]
         : prev.ruleIds.filter((id) => id !== ruleId),
     }));
+
+    // Clear rule error when user selects/deselects
+    if (formErrors.ruleIds) {
+      setFormErrors((prev) => ({ ...prev, ruleIds: "" }));
+    }
   };
 
   const handleSaveSchedule = async () => {
@@ -308,32 +388,33 @@ export default function ScheduleTab({
     try {
       // Create FormData for file upload
       const formData = new FormData();
-      
+
       // Add all form fields
       formData.append("name", scheduleForm.name);
       formData.append("date", scheduleForm.date);
       formData.append("time", scheduleForm.time);
       formData.append("venueId", scheduleForm.venueId);
+      formData.append("totalTeams", scheduleForm.totalTeams);
       formData.append("totalSlots", scheduleForm.totalSlots);
       formData.append("feePlayer", scheduleForm.feePlayer);
       formData.append("feeGk", scheduleForm.feeGk);
       formData.append("typeEvent", scheduleForm.typeEvent);
       formData.append("typeMatch", scheduleForm.typeMatch);
       formData.append("description", scheduleForm.description);
-      
-      // Add image file or URL
+
+      // Add image file
       if (scheduleForm.image) {
         formData.append("image", scheduleForm.image);
-      } else if (scheduleForm.imageUrl) {
-        formData.append("imageUrl", scheduleForm.imageUrl);
       }
-      
+
       // Add facility and rule IDs
-      scheduleForm.facilityIds.forEach(id => formData.append("facilityIds[]", id));
-      scheduleForm.ruleIds.forEach(id => formData.append("ruleIds[]", id));
+      scheduleForm.facilityIds.forEach((id) =>
+        formData.append("facilityIds[]", id)
+      );
+      scheduleForm.ruleIds.forEach((id) => formData.append("ruleIds[]", id));
 
       // Simulate API call with FormData
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await adminService.createSchedule(formData);
 
       if (editingSchedule) {
         showSuccess("Schedule updated successfully!");
@@ -357,6 +438,7 @@ export default function ScheduleTab({
       date: "",
       time: "",
       venueId: "",
+      totalTeams: "4",
       totalSlots: "16",
       feePlayer: "",
       feeGk: "",
@@ -364,7 +446,6 @@ export default function ScheduleTab({
       typeMatch: "",
       description: "",
       image: null,
-      imageUrl: "",
       facilityIds: [],
       ruleIds: [],
     });
@@ -383,16 +464,16 @@ export default function ScheduleTab({
       date: schedule.date,
       time: schedule.time,
       venueId: venue?.id || "",
+      totalTeams: "4", // Default value, you'll need to add this to ScheduleOverview type
       totalSlots: schedule.totalSlots.toString(),
       feePlayer: schedule.feePlayer.toString(),
       feeGk: schedule.feeGk.toString(),
       typeEvent: "Open",
       typeMatch: "Futsal",
-      description: "",
+      description: "", // You'll need to add this to ScheduleOverview type
       image: null,
-      imageUrl: "",
-      facilityIds: [],
-      ruleIds: [],
+      facilityIds: [], // You'll need to add this to ScheduleOverview type
+      ruleIds: [], // You'll need to add this to ScheduleOverview type
     });
     setShowScheduleDialog(true);
   };
@@ -674,18 +755,6 @@ export default function ScheduleTab({
           {Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of{" "}
           {filteredSchedules.length} schedules
         </p>
-
-        {filteredSchedules.length > 0 && (
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={selectedSchedules.length === filteredSchedules.length}
-              onChange={handleSelectAll}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-600">Select all</span>
-          </div>
-        )}
       </div>
 
       {/* Schedules Table */}
@@ -719,20 +788,9 @@ export default function ScheduleTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedSchedules.length ===
-                          paginatedSchedules.length &&
-                        paginatedSchedules.length > 0
-                      }
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </TableHead>
                   <TableHead>Schedule</TableHead>
                   <TableHead>Venue</TableHead>
+                  <TableHead>Teams</TableHead>
                   <TableHead>Booking</TableHead>
                   <TableHead>Revenue</TableHead>
                   <TableHead>Status</TableHead>
@@ -741,15 +799,7 @@ export default function ScheduleTab({
               </TableHeader>
               <TableBody>
                 {paginatedSchedules.map((schedule) => (
-                  <TableRow key={schedule.name} className="hover:bg-gray-50">
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedSchedules.includes(schedule.name)}
-                        onChange={() => handleSelectSchedule(schedule.name)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </TableCell>
+                  <TableRow key={schedule.id} className="hover:bg-gray-50">
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center">
@@ -769,6 +819,17 @@ export default function ScheduleTab({
                       <div className="flex items-center">
                         <MapPin className="w-4 h-4 text-gray-400 mr-1" />
                         <span className="text-sm">{schedule.venue}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 text-gray-400 mr-1" />
+                        <span className="text-sm">
+                          {Math.ceil(schedule.totalSlots / 5)} teams
+                        </span>
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({schedule.totalSlots} slots)
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -867,7 +928,7 @@ export default function ScheduleTab({
             <div>
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Nama Jadwal *
+                  Nama Jadwal <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
@@ -888,7 +949,7 @@ export default function ScheduleTab({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Tanggal *
+                  Tanggal <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="date"
@@ -903,7 +964,9 @@ export default function ScheduleTab({
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Jam *</label>
+                <label className="block text-sm font-medium mb-2">
+                  Jam <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="time"
                   value={scheduleForm.time}
@@ -918,34 +981,56 @@ export default function ScheduleTab({
               </div>
             </div>
 
-            {/* Venue and Slots */}
+            {/* Venue */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Venue <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={scheduleForm.venueId}
+                onChange={(e) =>
+                  handleScheduleInputChange("venueId", e.target.value)
+                }
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  formErrors.venueId ? "border-red-500" : "border-gray-300"
+                }`}
+                disabled={isLoadingVenues}
+              >
+                <option value="">
+                  {isLoadingVenues ? "Loading venues..." : "Select venue"}
+                </option>
+                {venues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.name}
+                  </option>
+                ))}
+              </select>
+              {formErrors.venueId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.venueId}
+                </p>
+              )}
+            </div>
+
+            {/* Teams and Slots */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Venue *
+                  Total Teams <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={scheduleForm.venueId}
+                <Input
+                  type="number"
+                  value={scheduleForm.totalTeams}
                   onChange={(e) =>
-                    handleScheduleInputChange("venueId", e.target.value)
+                    handleScheduleInputChange("totalTeams", e.target.value)
                   }
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.venueId ? "border-red-500" : "border-gray-300"
-                  }`}
-                  disabled={isLoadingVenues}
-                >
-                  <option value="">
-                    {isLoadingVenues ? "Loading venues..." : "Select venue"}
-                  </option>
-                  {venues.map((venue) => (
-                    <option key={venue.id} value={venue.id}>
-                      {venue.name}
-                    </option>
-                  ))}
-                </select>
-                {formErrors.venueId && (
+                  min="2"
+                  max="10"
+                  className={formErrors.totalTeams ? "border-red-500" : ""}
+                />
+                {formErrors.totalTeams && (
                   <p className="text-red-500 text-sm mt-1">
-                    {formErrors.venueId}
+                    {formErrors.totalTeams}
                   </p>
                 )}
               </div>
@@ -956,18 +1041,19 @@ export default function ScheduleTab({
                 <Input
                   type="number"
                   value={scheduleForm.totalSlots}
-                  onChange={(e) =>
-                    handleScheduleInputChange("totalSlots", e.target.value)
-                  }
-                  min="8"
-                  max="22"
-                  className={formErrors.totalSlots ? "border-red-500" : ""}
+                  disabled
+                  className="bg-gray-100 cursor-not-allowed"
                 />
-                {formErrors.totalSlots && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {formErrors.totalSlots}
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-calculated based on match type and total teams
+                  {scheduleForm.typeMatch && (
+                    <span className="block">
+                      ({getSlotsPerTeam(scheduleForm.typeMatch)} slots per team
+                      × {scheduleForm.totalTeams} teams ={" "}
+                      {scheduleForm.totalSlots} slots)
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
 
@@ -975,7 +1061,7 @@ export default function ScheduleTab({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Player Fee (Rp) *
+                  Player Fee (Rp) <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="number"
@@ -994,7 +1080,7 @@ export default function ScheduleTab({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Goalkeeper Fee (Rp) *
+                  Goalkeeper Fee (Rp) <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="number"
@@ -1017,7 +1103,7 @@ export default function ScheduleTab({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Event Type *
+                  Event Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={scheduleForm.typeEvent}
@@ -1042,7 +1128,7 @@ export default function ScheduleTab({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Match Type *
+                  Match Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={scheduleForm.typeMatch}
@@ -1066,26 +1152,45 @@ export default function ScheduleTab({
               </div>
             </div>
 
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Deskripsi <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={scheduleForm.description}
+                onChange={(e) =>
+                  handleScheduleInputChange("description", e.target.value)
+                }
+                placeholder="Enter schedule description"
+                rows={4}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+                  formErrors.description ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {formErrors.description && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.description}
+                </p>
+              )}
+            </div>
+
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium mb-3">
-                Match Image
+                Match Image <span className="text-red-500">*</span>
               </label>
               <ImageUpload
-                value={scheduleForm.image || scheduleForm.imageUrl}
+                value={scheduleForm.image ?? undefined}
                 onChange={(file) => {
-                  setScheduleForm(prev => ({ 
-                    ...prev, 
+                  setScheduleForm((prev) => ({
+                    ...prev,
                     image: file,
-                    imageUrl: file ? "" : prev.imageUrl
                   }));
-                }}
-                onUrlChange={(url) => {
-                  setScheduleForm(prev => ({ 
-                    ...prev, 
-                    imageUrl: url,
-                    image: null
-                  }));
+                  // Clear image error when user uploads file
+                  if (formErrors.image) {
+                    setFormErrors((prev) => ({ ...prev, image: "" }));
+                  }
                 }}
                 error={formErrors.image}
                 disabled={isSubmitting}
@@ -1096,10 +1201,11 @@ export default function ScheduleTab({
                 <p className="text-red-500 text-sm mt-1">{formErrors.image}</p>
               )}
             </div>
+
             {/* Facilities */}
             <div>
               <label className="block text-sm font-medium mb-3">
-                Fasilitas
+                Fasilitas <span className="text-red-500">*</span>
               </label>
               {isLoadingFacilities ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1142,6 +1248,11 @@ export default function ScheduleTab({
                   ))}
                 </div>
               )}
+              {formErrors.facilityIds && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.facilityIds}
+                </p>
+              )}
               {facilities.length === 0 && !isLoadingFacilities && (
                 <p className="text-gray-500 text-sm">
                   No facilities available. Please add facilities in Master Data
@@ -1152,7 +1263,9 @@ export default function ScheduleTab({
 
             {/* Rules */}
             <div>
-              <label className="block text-sm font-medium mb-3">Rules</label>
+              <label className="block text-sm font-medium mb-3">
+                Rules <span className="text-red-500">*</span>
+              </label>
               {isLoadingRules ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {[...Array(6)].map((_, i) => (
@@ -1188,6 +1301,11 @@ export default function ScheduleTab({
                     </label>
                   ))}
                 </div>
+              )}
+              {formErrors.ruleIds && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.ruleIds}
+                </p>
               )}
               {rules.length === 0 && !isLoadingRules && (
                 <p className="text-gray-500 text-sm">

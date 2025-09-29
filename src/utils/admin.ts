@@ -1,6 +1,11 @@
 import { ScheduleOverview } from "@/types/schedule";
 import { apiClient } from "./api";
-import { Roles, UserManagement } from "@/types/admin";
+import {
+  BookingHistory,
+  ReportBooking,
+  Roles,
+  UserManagement,
+} from "@/types/admin";
 import { News } from "@/types/news";
 import { AuthService } from "./auth";
 
@@ -73,24 +78,25 @@ class AdminService {
     return response.data;
   }
 
-  async createNews(
-    newsData: FormData
-  ): Promise<News | null> {
+  async createNews(newsData: FormData): Promise<News | null> {
     try {
       // For FormData, we need to use fetch directly with proper headers
       const session = await AuthService.getSession();
       const headers: HeadersInit = {};
-      
+
       if (session?.access_token) {
         headers.Authorization = `Bearer ${session.access_token}`;
       }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/news/add-news`, {
-        method: "POST",
-        headers,
-        body: newsData,
-      });
-      
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BE}/api/v1/news/add-news`,
+        {
+          method: "POST",
+          headers,
+          body: newsData,
+        }
+      );
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -103,24 +109,24 @@ class AdminService {
     }
   }
 
-  async updateNews(
-    id: string,
-    newsData: FormData
-  ): Promise<News | null> {
+  async updateNews(id: string, newsData: FormData): Promise<News | null> {
     try {
       const session = await AuthService.getSession();
       const headers: HeadersInit = {};
-      
+
       if (session?.access_token) {
         headers.Authorization = `Bearer ${session.access_token}`;
       }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/news/update-news/${id}`, {
-        method: "PUT",
-        headers,
-        body: newsData,
-      });
-      
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BE}/api/v1/news/update-news/${id}`,
+        {
+          method: "PUT",
+          headers,
+          body: newsData,
+        }
+      );
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -137,17 +143,20 @@ class AdminService {
     try {
       const session = await AuthService.getSession();
       const headers: HeadersInit = {};
-      
+
       if (session?.access_token) {
         headers.Authorization = `Bearer ${session.access_token}`;
       }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/matches/add-schedule`, {
-        method: "POST",
-        headers,
-        body: scheduleData,
-      });
-      
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BE}/api/v1/matches/add-schedule`,
+        {
+          method: "POST",
+          headers,
+          body: scheduleData,
+        }
+      );
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -164,17 +173,20 @@ class AdminService {
     try {
       const session = await AuthService.getSession();
       const headers: HeadersInit = {};
-      
+
       if (session?.access_token) {
         headers.Authorization = `Bearer ${session.access_token}`;
       }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BE}/api/v1/matches/update-schedule/${id}`, {
-        method: "PUT",
-        headers,
-        body: scheduleData,
-      });
-      
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BE}/api/v1/matches/update-schedule/${id}`,
+        {
+          method: "PUT",
+          headers,
+          body: scheduleData,
+        }
+      );
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -194,6 +206,48 @@ class AdminService {
     } catch (error) {
       console.error("Error fetching roles:", error);
       return [];
+    }
+  }
+
+  async reportBooking(
+    startDate?: string,
+    endDate?: string
+  ): Promise<ReportBooking> {
+    try {
+      const queryParams = new URLSearchParams();
+      console.log("startDate", startDate);
+      console.log("endDate", endDate);
+      if (startDate) queryParams.append("startDate", startDate.toString());
+      if (endDate) queryParams.append("endDate", endDate.toString());
+      const response = await apiClient.get(
+        "/api/v1/reports/booking-reports?" + queryParams
+      );
+
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async historyRecentBooking(
+    startDate?: string,
+    endDate?: string,
+    status?: string,
+    search?: string
+  ): Promise<BookingHistory[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (startDate) queryParams.append("startDate", startDate.toString());
+      if (endDate) queryParams.append("endDate", endDate.toString());
+      if (status) queryParams.append("status", status.toString());
+      if (search) queryParams.append("keyword", search.toString());
+
+      const response = await apiClient.get(
+        "/api/v1/booking/recent-booking?" + queryParams
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
     }
   }
 }

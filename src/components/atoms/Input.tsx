@@ -4,11 +4,12 @@ interface InputProps {
   type?: string;
   placeholder?: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
   icon?: React.ReactNode;
   min?: string;
   max?: string;
+  disabled?: boolean;
 }
 
 export default function Input({
@@ -20,6 +21,7 @@ export default function Input({
   icon,
   min,
   max,
+  disabled,
 }: InputProps) {
   return (
     <div className="relative">
@@ -35,6 +37,7 @@ export default function Input({
         max={max}
         value={value}
         onChange={onChange}
+        disabled={disabled}
         className={`w-full ${
           icon ? "pl-10" : "pl-4"
         } pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}

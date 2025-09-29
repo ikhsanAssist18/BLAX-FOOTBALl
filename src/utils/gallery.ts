@@ -59,27 +59,26 @@ class GalleryService {
   }
 
   // Admin functions
-  async getAllPhotos(
-    search?: string,
-    category?: string,
-    page?: number,
-    limit?: number
-  ): Promise<{
-    data: GalleryPhoto[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async getAllPhotos(search?: string): Promise<GalleryPhoto[]> {
     const queryParams = new URLSearchParams();
     if (search) queryParams.append("search", search);
-    if (category) queryParams.append("category", category);
-    if (page) queryParams.append("page", page.toString());
-    if (limit) queryParams.append("limit", limit.toString());
 
-    const response = await apiClient.get(
-      `/api/v1/gallery/photos?${queryParams}`
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BE}/api/v1/matches/schedules-gallery`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
-    return response;
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to fetch gallery photos");
+    }
+
+    return result.data;
   }
 
   async uploadPhoto(data: FormData): Promise<GalleryPhoto> {
@@ -138,13 +137,21 @@ class GalleryService {
     return result;
   }
 
-  async createGallerySession(data: Omit<GallerySession, "id" | "createdAt">): Promise<GallerySession> {
+  async createGallerySession(
+    data: Omit<GallerySession, "id" | "createdAt">
+  ): Promise<GallerySession> {
     const response = await apiClient.post("/api/v1/gallery/sessions", data);
     return response.data;
   }
 
-  async updateGallerySession(id: string, data: Partial<GallerySession>): Promise<GallerySession> {
-    const response = await apiClient.put(`/api/v1/gallery/sessions/${id}`, data);
+  async updateGallerySession(
+    id: string,
+    data: Partial<GallerySession>
+  ): Promise<GallerySession> {
+    const response = await apiClient.put(
+      `/api/v1/gallery/sessions/${id}`,
+      data
+    );
     return response.data;
   }
 
