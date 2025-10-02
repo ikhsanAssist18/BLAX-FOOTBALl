@@ -467,10 +467,17 @@ export default function ScheduleDetailPage() {
                       </h3>
                     </div>
                     <div className="p-6 space-y-3">
-                      <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-md hover:shadow-lg" variant="primary" size="lg">
+                      <Button
+                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-md hover:shadow-lg"
+                        variant="primary"
+                        size="lg"
+                      >
                         Book Now
                       </Button>
-                      <Button className="w-full border-emerald-200 text-emerald-600 hover:bg-emerald-50" variant="outline">
+                      <Button
+                        className="w-full border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                        variant="outline"
+                      >
                         Share Match
                       </Button>
                     </div>
@@ -486,13 +493,17 @@ export default function ScheduleDetailPage() {
                       <div className="flex items-start space-x-2">
                         <MapPin className="w-4 h-4 text-teal-500 mt-0.5" />
                         <div>
-                          <p className="font-sm font-bold text-slate-900">{schedule.venue}</p>
-                          <p className="font-sm text-slate-600">{schedule.address}</p>
+                          <p className="font-sm font-bold text-slate-900">
+                            {schedule.venue}
+                          </p>
+                          <p className="font-sm text-slate-600">
+                            {schedule.address}
+                          </p>
                         </div>
                       </div>
                       <Button
                         href={schedule.gmapLink}
-                        variant="outline" 
+                        variant="outline"
                         size="sm"
                         className="w-full border-teal-200 text-teal-600 hover:bg-teal-50"
                       >
@@ -522,7 +533,10 @@ export default function ScheduleDetailPage() {
                             <h3 className="text-lg font-semibold text-slate-900">
                               Team {teamKey}
                             </h3>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 border-blue-200"
+                            >
                               {(team.PLAYERS?.length || 0) + (team.GK ? 1 : 0)}{" "}
                               Players
                             </Badge>

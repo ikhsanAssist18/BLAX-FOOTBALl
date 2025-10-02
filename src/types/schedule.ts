@@ -24,10 +24,12 @@ export interface ScheduleDetail extends Schedule {
 }
 
 interface Facilites {
+  id?: string;
   name: string;
 }
 
 export interface Rules {
+  id?: string;
   description: string;
 }
 
@@ -39,9 +41,15 @@ export interface ScheduleOverview {
   feePlayer: number;
   name: string;
   venue: string;
+  team: number;
+  typeEvent: string;
+  typeMatch: string;
+  imageUrl: string;
   openSlots: number;
   bookedSlots: number;
   totalSlots: number;
   revenue: number;
   status: string;
+  rules: Rules[];
+  facilities: Facilites[];
 }

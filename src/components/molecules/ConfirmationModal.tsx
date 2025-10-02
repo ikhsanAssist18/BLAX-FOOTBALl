@@ -1,6 +1,12 @@
 import React from "react";
 import { AlertTriangle, CheckCircle, X, Loader2 } from "lucide-react";
 import Button from "../atoms/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../atoms/Dialog";
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -25,8 +31,6 @@ export default function ConfirmationModal({
   cancelText = "Cancel",
   isLoading = false,
 }: ConfirmationModalProps) {
-  if (!isOpen) return null;
-
   const getIcon = () => {
     switch (type) {
       case "danger":
@@ -53,16 +57,15 @@ export default function ConfirmationModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={!isLoading ? onClose : undefined}
-      />
+  const handleOpenChange = (open: boolean) => {
+    if (!open && !isLoading) {
+      onClose();
+    }
+  };
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+  return (
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="w-full max-w-md">
         {/* Close Button */}
         {!isLoading && (
           <button
@@ -78,8 +81,12 @@ export default function ConfirmationModal({
           {/* Icon */}
           <div className="flex justify-center mb-4">{getIcon()}</div>
 
-          {/* Title */}
-          <h3 className="text-xl font-bold text-gray-900 mb-4">{title}</h3>
+          {/* Header with Title */}
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900 text-center">
+              {title}
+            </DialogTitle>
+          </DialogHeader>
 
           {/* Message */}
           <p className="text-gray-600 mb-8 leading-relaxed">{message}</p>
@@ -113,7 +120,7 @@ export default function ConfirmationModal({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

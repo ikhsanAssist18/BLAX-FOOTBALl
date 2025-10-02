@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Plus,
-  CreditCard as Edit,
+  Edit,
   Trash2,
   Search,
   Filter,
@@ -67,50 +67,6 @@ interface Facility {
   // Add other facility properties as needed
 }
 
-// Skeleton Components
-const TableSkeleton = () => (
-  <div className="space-y-4">
-    {[...Array(5)].map((_, i) => (
-      <div
-        key={i}
-        className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse"
-      >
-        <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
-        <div className="flex-1 space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-        </div>
-        <div className="w-20 h-6 bg-gray-200 rounded"></div>
-        <div className="w-24 h-6 bg-gray-200 rounded"></div>
-        <div className="w-16 h-6 bg-gray-200 rounded"></div>
-        <div className="flex space-x-2">
-          <div className="w-8 h-8 bg-gray-200 rounded"></div>
-          <div className="w-8 h-8 bg-gray-200 rounded"></div>
-          <div className="w-8 h-8 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
-const StatsSkeleton = () => (
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    {[...Array(4)].map((_, i) => (
-      <Card key={i} className="animate-pulse">
-        <CardContent className="p-6">
-          <div className="pt-4 flex items-center justify-between">
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-20"></div>
-              <div className="h-8 bg-gray-200 rounded w-16"></div>
-            </div>
-            <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-          </div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-);
-
 export default function ScheduleTab({
   showError,
   showSuccess,
@@ -155,7 +111,6 @@ export default function ScheduleTab({
     feeGk: "",
     typeEvent: "",
     typeMatch: "",
-    description: "",
     image: null as File | null,
     facilityIds: [] as string[],
     ruleIds: [] as string[],
@@ -271,8 +226,6 @@ export default function ScheduleTab({
     if (!scheduleForm.feeGk) errors.feeGk = "Goalkeeper fee is required";
     if (!scheduleForm.typeEvent) errors.typeEvent = "Event type is required";
     if (!scheduleForm.typeMatch) errors.typeMatch = "Match type is required";
-    if (!scheduleForm.description.trim())
-      errors.description = "Description is required";
     if (!scheduleForm.image) errors.image = "Match image is required";
     if (scheduleForm.facilityIds.length === 0)
       errors.facilityIds = "At least one facility must be selected";
@@ -400,7 +353,6 @@ export default function ScheduleTab({
       formData.append("feeGk", scheduleForm.feeGk);
       formData.append("typeEvent", scheduleForm.typeEvent);
       formData.append("typeMatch", scheduleForm.typeMatch);
-      formData.append("description", scheduleForm.description);
 
       // Add image file
       if (scheduleForm.image) {
@@ -444,7 +396,6 @@ export default function ScheduleTab({
       feeGk: "",
       typeEvent: "",
       typeMatch: "",
-      description: "",
       image: null,
       facilityIds: [],
       ruleIds: [],
@@ -464,65 +415,40 @@ export default function ScheduleTab({
       date: schedule.date,
       time: schedule.time,
       venueId: venue?.id || "",
-      totalTeams: "4", // Default value, you'll need to add this to ScheduleOverview type
+      totalTeams: String(schedule.team),
       totalSlots: schedule.totalSlots.toString(),
       feePlayer: schedule.feePlayer.toString(),
       feeGk: schedule.feeGk.toString(),
-      typeEvent: "Open",
-      typeMatch: "Futsal",
-      description: "", // You'll need to add this to ScheduleOverview type
+      typeEvent: schedule.typeEvent,
+      typeMatch: schedule.typeMatch,
       image: null,
-      facilityIds: [], // You'll need to add this to ScheduleOverview type
-      ruleIds: [], // You'll need to add this to ScheduleOverview type
+      facilityIds: schedule.facilities
+        ? schedule.facilities.map((f: any) =>
+            typeof f === "string" ? f : f.id
+          )
+        : [],
+      ruleIds: schedule.rules
+        ? schedule.rules.map((r: any) => (typeof r === "string" ? r : r.id))
+        : [],
     });
     setShowScheduleDialog(true);
   };
+
+  console.log("schedule form", scheduleForm);
 
   const handleDeleteSchedule = async () => {
     if (!scheduleToDelete) return;
 
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
+      // await new Promise((resolve) => setTimeout(resolve, 500));
+      await adminService.deleteSchedule(scheduleToDelete.id);
       showSuccess("Schedule deleted successfully!");
       setShowDeleteConfirm(false);
       setScheduleToDelete(null);
       fetchScheduleOverview();
     } catch (error) {
       showError("Error", "Failed to delete schedule");
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      showSuccess(
-        `${selectedSchedules.length} schedules deleted successfully!`
-      );
-      setShowBulkDeleteConfirm(false);
-      setSelectedSchedules([]);
-      fetchScheduleOverview();
-    } catch (error) {
-      showError("Error", "Failed to delete schedules");
-    }
-  };
-
-  const handleSelectSchedule = (scheduleName: string) => {
-    setSelectedSchedules((prev) =>
-      prev.includes(scheduleName)
-        ? prev.filter((name) => name !== scheduleName)
-        : [...prev, scheduleName]
-    );
-  };
-
-  const handleSelectAll = () => {
-    if (selectedSchedules.length === filteredSchedules.length) {
-      setSelectedSchedules([]);
-    } else {
-      setSelectedSchedules(filteredSchedules.map((s) => s.name));
     }
   };
 
@@ -1152,29 +1078,6 @@ export default function ScheduleTab({
               </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Deskripsi <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={scheduleForm.description}
-                onChange={(e) =>
-                  handleScheduleInputChange("description", e.target.value)
-                }
-                placeholder="Enter schedule description"
-                rows={4}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
-                  formErrors.description ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {formErrors.description && (
-                <p className="text-red-500 text-sm mt-1">
-                  {formErrors.description}
-                </p>
-              )}
-            </div>
-
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium mb-3">
@@ -1364,18 +1267,6 @@ export default function ScheduleTab({
         message={`Are you sure you want to delete "${scheduleToDelete?.name}"? This action cannot be undone.`}
         type="danger"
         confirmText="Delete"
-        cancelText="Cancel"
-      />
-
-      {/* Bulk Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showBulkDeleteConfirm}
-        onClose={() => setShowBulkDeleteConfirm(false)}
-        onConfirm={handleBulkDelete}
-        title="Delete Multiple Schedules"
-        message={`Are you sure you want to delete ${selectedSchedules.length} selected schedules? This action cannot be undone.`}
-        type="danger"
-        confirmText="Delete All"
         cancelText="Cancel"
       />
     </div>

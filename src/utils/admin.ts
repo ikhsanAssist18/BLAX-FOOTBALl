@@ -7,9 +7,7 @@ import {
   UserManagement,
 } from "@/types/admin";
 import { News } from "@/types/news";
-import { AuthService } from "./auth";
 
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_BE}/api/v1/auth`;
 class AdminService {
   // User Management
   async getAllUsers(
@@ -80,121 +78,61 @@ class AdminService {
 
   async createNews(newsData: FormData): Promise<News | null> {
     try {
-      // For FormData, we need to use fetch directly with proper headers
-      const session = await AuthService.getSession();
-      const headers: HeadersInit = {};
-
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BE}/api/v1/news/add-news`,
-        {
-          method: "POST",
-          headers,
-          body: newsData,
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Something went wrong!");
-      }
-
-      return result.data;
+      const response = await apiClient.post("/api/v1/news/add-news", newsData);
+      return response.data;
     } catch (error) {
+      console.error("Error creating news:", error);
       return null;
     }
   }
 
   async updateNews(id: string, newsData: FormData): Promise<News | null> {
     try {
-      const session = await AuthService.getSession();
-      const headers: HeadersInit = {};
-
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BE}/api/v1/news/update-news/${id}`,
-        {
-          method: "PUT",
-          headers,
-          body: newsData,
-        }
+      const response = await apiClient.put(
+        `/api/v1/news/update-news/${id}`,
+        newsData
       );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Something went wrong!");
-      }
-
-      return result.data;
+      return response.data;
     } catch (error) {
+      console.error("Error updating news:", error);
       return null;
     }
   }
 
   async createSchedule(scheduleData: FormData): Promise<any> {
     try {
-      const session = await AuthService.getSession();
-      const headers: HeadersInit = {};
-
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BE}/api/v1/matches/add-schedule`,
-        {
-          method: "POST",
-          headers,
-          body: scheduleData,
-        }
+      const response = await apiClient.post(
+        "/api/v1/matches/add-schedule",
+        scheduleData
       );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Something went wrong!");
-      }
-
-      return result.data;
+      return response.data;
     } catch (error) {
+      console.error("Error creating schedule:", error);
       throw error;
     }
   }
 
   async updateSchedule(id: string, scheduleData: FormData): Promise<any> {
     try {
-      const session = await AuthService.getSession();
-      const headers: HeadersInit = {};
-
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BE}/api/v1/matches/update-schedule/${id}`,
-        {
-          method: "PUT",
-          headers,
-          body: scheduleData,
-        }
+      const response = await apiClient.put(
+        `/api/v1/matches/update-schedule/${id}`,
+        scheduleData
       );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Something went wrong!");
-      }
-
-      return result.data;
+      return response.data;
     } catch (error) {
+      console.error("Error updating schedule:", error);
+      throw error;
+    }
+  }
+
+  async deleteSchedule(id: string): Promise<any> {
+    try {
+      const response = await apiClient.delete(
+        `/api/v1/matches/delete-schedule?id=${id}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting schedule:", error);
       throw error;
     }
   }
