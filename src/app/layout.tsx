@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/components/organisms/NotificationContainer";
 import LoadingScreen from "@/components/atoms/LoadingScreen";
+import GlobalLoadingScreen from "@/components/molecules/GlobalLoadingScreen";
 import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -39,7 +40,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <Suspense fallback={<LoadingScreen message="Loading application..." />}>
           <AuthProvider>
-            <NotificationProvider>{children}</NotificationProvider>
+            <NotificationProvider>
+              <GlobalLoadingScreen />
+              {children}
+            </NotificationProvider>
           </AuthProvider>
         </Suspense>
       </body>

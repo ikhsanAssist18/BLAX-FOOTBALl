@@ -85,9 +85,12 @@ export const getDateRange = (filter: string) => {
       endDate = new Date().toISOString().split("T")[0];
       break;
     default:
-      // "all" - no date filter
       break;
   }
 
   return { startDate, endDate };
 };
+
+export function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(" ");
+}
