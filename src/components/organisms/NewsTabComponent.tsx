@@ -737,10 +737,6 @@ export default function NewsTab() {
                   setImage(file);
                   if (file) setImageUrl("");
                 }}
-                onUrlChange={(url) => {
-                  setImageUrl(url);
-                  setImage(null);
-                }}
                 error={formErrors.imageUrl}
                 disabled={isSubmitting}
                 maxSize={5}

@@ -6,8 +6,6 @@ import Button from "./atoms/Button";
 import AuthModal from "./molecules/AuthModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { HeroActions } from "./molecules/HeroActions";
-import Image from "next/image";
-import BlaxLogo from "@/assets/blax-logo.png";
 
 export default function Hero() {
   const router = useRouter();
@@ -53,8 +51,8 @@ export default function Hero() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Logo/Brand */}
             <div className="flex items-center justify-center mb-8">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-3 rounded-2xl mr-2">
-                <Image src={BlaxLogo} alt="Logo" width={150} height={150} />
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-6 rounded-2xl">
+                <Shield className="w-20 h-20 text-sky-400" />
               </div>
             </div>
 

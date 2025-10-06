@@ -161,13 +161,7 @@ class LineupService {
   }
 
   private async getAuthHeaders(): Promise<HeadersInit> {
-    const session = await AuthService.getSession();
     const headers: HeadersInit = {};
-
-    if (session?.access_token) {
-      headers.Authorization = `Bearer ${session.access_token}`;
-    }
-
     return headers;
   }
 }

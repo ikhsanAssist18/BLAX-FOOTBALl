@@ -15,8 +15,6 @@ import Button from "../atoms/Button";
 import AuthModal from "../molecules/AuthModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "./NotificationContainer";
-import BlaxLogo from "@/assets/blax-logo.png";
-import Image from "next/image";
 
 interface NavbarProps {
   useScrollEffect?: boolean;
@@ -187,7 +185,7 @@ export default function Navbar({ useScrollEffect = false }: NavbarProps) {
                 onClick={() => router.push("/")}
                 className="p-2 rounded-xl"
               >
-                <Image src={BlaxLogo} alt="Logo" width={50} height={50} />
+                <Calendar className="w-8 h-8 text-sky-500" />
               </button>
               <button
                 className={`text-xl font-bold transition-colors duration-300 ${getLogoStyles()}`}
