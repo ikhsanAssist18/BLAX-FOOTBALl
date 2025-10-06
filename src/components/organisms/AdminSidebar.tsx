@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   BarChart3,
   Calendar,
@@ -9,8 +9,6 @@ import {
   Database,
   History,
   Shield,
-  Menu,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/helper";
 
@@ -44,29 +42,56 @@ export default function AdminSidebar({
   isMobileOpen,
   onMobileToggle,
 }: AdminSidebarProps) {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isMobileOpen) {
+        onMobileToggle();
+      }
+    };
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && isMobileOpen) {
+        onMobileToggle();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleResize);
+
+    if (isMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleResize);
+      document.body.style.overflow = "";
+    };
+  }, [isMobileOpen, onMobileToggle]);
+
+  const handleNavClick = (itemId: string) => {
+    onTabChange(itemId);
+    if (window.innerWidth < 1024) {
+      onMobileToggle();
+    }
+  };
+
   return (
     <>
-      <button
-        onClick={onMobileToggle}
-        className="lg:hidden fixed top-20 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-        aria-label="Toggle menu"
-      >
-        {isMobileOpen ? (
-          <X className="h-5 w-5 text-gray-700" />
-        ) : (
-          <Menu className="h-5 w-5 text-gray-700" />
-        )}
-      </button>
-
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 z-40",
-          "lg:translate-x-0",
-          isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full lg:w-64"
+          "fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out z-40",
+          "lg:translate-x-0 w-64",
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        role="navigation"
+        aria-label="Admin navigation"
+        aria-expanded={isMobileOpen}
       >
         <div className="h-full flex flex-col">
-          <div className="p-6 border-b border-gray-200">
+          <div className="h-16 flex items-center px-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Navigation</h2>
           </div>
 
@@ -78,18 +103,15 @@ export default function AdminSidebar({
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    onTabChange(item.id);
-                    if (window.innerWidth < 1024) {
-                      onMobileToggle();
-                    }
-                  }}
+                  onClick={() => handleNavClick(item.id)}
                   className={cn(
                     "w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200",
+                    "focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2",
                     isActive
                       ? "bg-sky-50 text-sky-700 font-medium shadow-sm"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   )}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-sky-600" : "text-gray-500")} />
                   <span className="truncate">{item.label}</span>
@@ -102,9 +124,11 @@ export default function AdminSidebar({
 
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/30 z-30 transition-opacity duration-300"
+          className="lg:hidden fixed inset-0 bg-black/50 z-30 animate-fadeIn"
           onClick={onMobileToggle}
           aria-hidden="true"
+          role="button"
+          tabIndex={-1}
         />
       )}
     </>

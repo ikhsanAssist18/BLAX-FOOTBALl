@@ -105,12 +105,41 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center lg:ml-64">
-              <h1 className="text-lg md:text-2xl font-bold text-gray-900 ml-12 lg:ml-0">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={toggleMobileSidebar}
+                className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
+                aria-label={isMobileSidebarOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMobileSidebarOpen}
+              >
+                <svg
+                  className="h-6 w-6 text-gray-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {isMobileSidebarOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+              <h1 className="text-lg md:text-2xl font-bold text-gray-900">
                 Dashboard Admin
               </h1>
             </div>
@@ -132,7 +161,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <AdminSidebar
           selectedTab={selectedTab}
           onTabChange={setSelectedTab}
@@ -140,9 +169,9 @@ export default function AdminPage() {
           onMobileToggle={toggleMobileSidebar}
         />
 
-        <main className="flex-1 lg:ml-0 transition-all duration-300">
+        <main className="flex-1 overflow-y-auto lg:ml-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-            <div className="transition-all duration-300">{renderTabContent()}</div>
+            <div className="animate-fadeIn">{renderTabContent()}</div>
           </div>
         </main>
       </div>
