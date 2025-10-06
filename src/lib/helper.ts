@@ -59,3 +59,35 @@ export async function encryptWithPublicKey(data: object) {
   // Convert ke base64 supaya aman dikirim ke server
   return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
 }
+
+export const getDateRange = (filter: string) => {
+  const now = new Date();
+  let startDate = "";
+  let endDate = "";
+
+  switch (filter) {
+    case "today":
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      startDate = today.toISOString().split("T")[0];
+      endDate = new Date().toISOString().split("T")[0];
+      break;
+    case "week":
+      const weekAgo = new Date();
+      weekAgo.setDate(now.getDate() - 7);
+      startDate = weekAgo.toISOString().split("T")[0];
+      endDate = new Date().toISOString().split("T")[0];
+      break;
+    case "month":
+      const monthAgo = new Date();
+      monthAgo.setMonth(now.getMonth() - 1);
+      startDate = monthAgo.toISOString().split("T")[0];
+      endDate = new Date().toISOString().split("T")[0];
+      break;
+    default:
+      // "all" - no date filter
+      break;
+  }
+
+  return { startDate, endDate };
+};

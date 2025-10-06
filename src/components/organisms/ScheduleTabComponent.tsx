@@ -41,7 +41,7 @@ import { useNotifications } from "./NotificationContainer";
 import { scheduleService } from "@/utils/schedule";
 import { adminService } from "@/utils/admin";
 import { masterDataService, Rule } from "@/utils/masterData";
-import { formatDate } from "@/lib/helper";
+import { formatDate, getDateRange } from "@/lib/helper";
 import ConfirmationModal from "../molecules/ConfirmationModal";
 import Pagination from "../atoms/Pagination";
 import { TableLoadingSkeleton } from "./LoadingSkeleton";
@@ -84,6 +84,7 @@ export default function ScheduleTab({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [venueFilter, setVenueFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -98,6 +99,7 @@ export default function ScheduleTab({
   const [isLoadingVenues, setIsLoadingVenues] = useState(false);
   const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
   const [isLoadingRules, setIsLoadingRules] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form states for new/edit schedule - removed imageUrl
   const [scheduleForm, setScheduleForm] = useState({
@@ -119,11 +121,15 @@ export default function ScheduleTab({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetchScheduleOverview();
+    // fetchScheduleOverview();
     fetchVenues();
     fetchFacilities();
     fetchRules();
   }, []);
+
+  useEffect(() => {
+    fetchScheduleOverview();
+  }, [dateFilter]);
 
   useEffect(() => {
     filterSchedules();
@@ -132,7 +138,8 @@ export default function ScheduleTab({
   const fetchScheduleOverview = async () => {
     try {
       setIsLoading(true);
-      const result = await adminService.scheduleOverview();
+      const { startDate, endDate } = getDateRange(dateFilter);
+      const result = await adminService.scheduleOverview(startDate, endDate);
       setSchedules(result);
     } catch (error) {
       console.error("Error fetching schedule overview:", error);
@@ -243,20 +250,14 @@ export default function ScheduleTab({
       errors.totalSlots = "Total slots must be a number";
     }
 
-    // Additional validation rules
-    if (
-      scheduleForm.totalSlots &&
-      (Number(scheduleForm.totalSlots) < 8 ||
-        Number(scheduleForm.totalSlots) > 22)
-    ) {
-      errors.totalSlots = "Total slots must be between 8 and 22";
-    }
     if (scheduleForm.feePlayer && Number(scheduleForm.feePlayer) < 0) {
       errors.feePlayer = "Player fee must be a positive number";
     }
     if (scheduleForm.feeGk && Number(scheduleForm.feeGk) < 0) {
       errors.feeGk = "Goalkeeper fee must be a positive number";
     }
+
+    console.log("errors", errors);
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -347,8 +348,7 @@ export default function ScheduleTab({
       formData.append("date", scheduleForm.date);
       formData.append("time", scheduleForm.time);
       formData.append("venueId", scheduleForm.venueId);
-      formData.append("totalTeams", scheduleForm.totalTeams);
-      formData.append("totalSlots", scheduleForm.totalSlots);
+      formData.append("team", scheduleForm.totalTeams);
       formData.append("feePlayer", scheduleForm.feePlayer);
       formData.append("feeGk", scheduleForm.feeGk);
       formData.append("typeEvent", scheduleForm.typeEvent);
@@ -356,7 +356,7 @@ export default function ScheduleTab({
 
       // Add image file
       if (scheduleForm.image) {
-        formData.append("image", scheduleForm.image);
+        formData.append("imageUrl", scheduleForm.image);
       }
 
       // Add facility and rule IDs
@@ -364,6 +364,8 @@ export default function ScheduleTab({
         formData.append("facilityIds[]", id)
       );
       scheduleForm.ruleIds.forEach((id) => formData.append("ruleIds[]", id));
+
+      console.log("form data", formData);
 
       // Simulate API call with FormData
       await adminService.createSchedule(formData);
@@ -434,14 +436,11 @@ export default function ScheduleTab({
     setShowScheduleDialog(true);
   };
 
-  console.log("schedule form", scheduleForm);
-
   const handleDeleteSchedule = async () => {
     if (!scheduleToDelete) return;
 
+    setIsDeleting(true);
     try {
-      // Simulate API call
-      // await new Promise((resolve) => setTimeout(resolve, 500));
       await adminService.deleteSchedule(scheduleToDelete.id);
       showSuccess("Schedule deleted successfully!");
       setShowDeleteConfirm(false);
@@ -449,6 +448,8 @@ export default function ScheduleTab({
       fetchScheduleOverview();
     } catch (error) {
       showError("Error", "Failed to delete schedule");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -612,9 +613,20 @@ export default function ScheduleTab({
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="ACTIVE">Active</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
               </select>
 
               <select
@@ -750,9 +762,7 @@ export default function ScheduleTab({
                     <TableCell>
                       <div className="flex items-center">
                         <Users className="w-4 h-4 text-gray-400 mr-1" />
-                        <span className="text-sm">
-                          {Math.ceil(schedule.totalSlots / 5)} teams
-                        </span>
+                        <span className="text-sm">{schedule.team} teams</span>
                         <span className="text-xs text-gray-500 ml-1">
                           ({schedule.totalSlots} slots)
                         </span>
@@ -790,11 +800,13 @@ export default function ScheduleTab({
                     <TableCell>
                       <Badge
                         variant={
-                          schedule.status === "active" ? "default" : "secondary"
+                          schedule.status === "ACTIVE" ? "default" : "secondary"
                         }
                         className={
-                          schedule.status === "active"
+                          schedule.status === "ACTIVE"
                             ? "bg-green-100 text-green-800"
+                            : schedule.status === "CANCELLED"
+                            ? "bg-red-400 text-white"
                             : "bg-gray-100 text-gray-800"
                         }
                       >
@@ -808,6 +820,10 @@ export default function ScheduleTab({
                           variant="ghost"
                           onClick={() => handleEditSchedule(schedule)}
                           className="hover:bg-yellow-50"
+                          disabled={
+                            schedule.status === "CANCELLED" ||
+                            schedule.status === "COMPLETED"
+                          }
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -819,6 +835,10 @@ export default function ScheduleTab({
                             setShowDeleteConfirm(true);
                           }}
                           className="hover:bg-red-50 text-red-600"
+                          disabled={
+                            schedule.status === "CANCELLED" ||
+                            schedule.status === "COMPLETED"
+                          }
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -1041,10 +1061,10 @@ export default function ScheduleTab({
                   }`}
                 >
                   <option value="">Select event type</option>
-                  <option value="Open">Open</option>
-                  <option value="Mix">Mix</option>
+                  <option value="FUN GAME">Fun Game</option>
+                  {/* <option value="Mix">Mix</option>
                   <option value="Championship">Championship</option>
-                  <option value="Tournament">Tournament</option>
+                  <option value="Tournament">Tournament</option> */}
                 </select>
                 {formErrors.typeEvent && (
                   <p className="text-red-500 text-sm mt-1">
@@ -1066,9 +1086,9 @@ export default function ScheduleTab({
                   }`}
                 >
                   <option value="">Select match type</option>
-                  <option value="Futsal">Futsal</option>
-                  <option value="Mini Soccer">Mini Soccer</option>
-                  <option value="Football">Football</option>
+                  <option value="FUTSAL">Futsal</option>
+                  <option value="MINI-SOCCER">Mini Soccer</option>
+                  <option value="FOOTBALL">Football</option>
                 </select>
                 {formErrors.typeMatch && (
                   <p className="text-red-500 text-sm mt-1">
@@ -1268,6 +1288,7 @@ export default function ScheduleTab({
         type="danger"
         confirmText="Delete"
         cancelText="Cancel"
+        isLoading={isDeleting}
       />
     </div>
   );

@@ -27,7 +27,7 @@ import {
 } from "../atoms/Table";
 import Badge from "../atoms/Badge";
 import { useNotifications } from "./NotificationContainer";
-import { formatCurrency, formatDate } from "@/lib/helper";
+import { formatCurrency, formatDate, getDateRange } from "@/lib/helper";
 import BookingHistoryDetail from "./BookingHistoryDetail";
 
 import { BookingHistory } from "@/types/admin";
@@ -167,39 +167,6 @@ export default function BookingHistoryTab() {
 
   // Debounce search term to avoid too many API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
-
-  // Helper function to get date range based on filter
-  const getDateRange = (filter: string) => {
-    const now = new Date();
-    let startDate = "";
-    let endDate = "";
-
-    switch (filter) {
-      case "today":
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        startDate = today.toISOString().split("T")[0];
-        endDate = new Date().toISOString().split("T")[0];
-        break;
-      case "week":
-        const weekAgo = new Date();
-        weekAgo.setDate(now.getDate() - 7);
-        startDate = weekAgo.toISOString().split("T")[0];
-        endDate = new Date().toISOString().split("T")[0];
-        break;
-      case "month":
-        const monthAgo = new Date();
-        monthAgo.setMonth(now.getMonth() - 1);
-        startDate = monthAgo.toISOString().split("T")[0];
-        endDate = new Date().toISOString().split("T")[0];
-        break;
-      default:
-        // "all" - no date filter
-        break;
-    }
-
-    return { startDate, endDate };
-  };
 
   const fetchBookingHistory = useCallback(
     async (isSearch = false) => {

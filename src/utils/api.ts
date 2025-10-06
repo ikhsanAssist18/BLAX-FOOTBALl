@@ -15,11 +15,16 @@ export class ApiClient {
     return ApiClient.instance;
   }
 
-  private async getAuthHeaders(): Promise<HeadersInit> {
+  private async getAuthHeaders(
+    isFormData: boolean = false
+  ): Promise<HeadersInit> {
     const session = await AuthService.getSession();
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
+    const headers: HeadersInit = {};
+
+    // Jangan set Content-Type untuk FormData, biarkan browser yang set dengan boundary
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
 
     if (session?.access_token) {
       headers.Authorization = `Bearer ${session.access_token}`;
@@ -74,12 +79,13 @@ export class ApiClient {
     data?: any,
     options: RequestInit = {}
   ): Promise<any> {
-    const headers = await this.getAuthHeaders();
+    const isFormData = data instanceof FormData;
+    const headers = await this.getAuthHeaders(isFormData);
 
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: "POST",
       headers: { ...headers, ...options.headers },
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData ? data : data ? JSON.stringify(data) : undefined,
       ...options,
     });
 
@@ -91,12 +97,13 @@ export class ApiClient {
     data?: any,
     options: RequestInit = {}
   ): Promise<any> {
-    const headers = await this.getAuthHeaders();
+    const isFormData = data instanceof FormData;
+    const headers = await this.getAuthHeaders(isFormData);
 
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: "PUT",
       headers: { ...headers, ...options.headers },
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData ? data : data ? JSON.stringify(data) : undefined,
       ...options,
     });
 

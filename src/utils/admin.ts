@@ -59,8 +59,8 @@ class AdminService {
   }
 
   async scheduleOverview(
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: String,
+    endDate?: String,
     venue?: string
   ): Promise<ScheduleOverview[]> {
     const queryParams = new URLSearchParams();
@@ -102,7 +102,7 @@ class AdminService {
   async createSchedule(scheduleData: FormData): Promise<any> {
     try {
       const response = await apiClient.post(
-        "/api/v1/matches/add-schedule",
+        "/api/v1/matches/add-schedules",
         scheduleData
       );
       return response.data;
