@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import {
   DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -15,7 +14,6 @@ import {
   rectIntersection,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -23,20 +21,13 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import {
   Plus,
-  CreditCard as Edit,
-  Trash2,
   GripVertical,
   Users,
   Trophy,
-  Star,
   Clock,
   MapPin,
   Calendar,
   Save,
-  RefreshCw,
-  Eye,
-  Download,
-  Upload,
   Loader2,
 } from "lucide-react";
 import Button from "../atoms/Button";
@@ -107,12 +98,7 @@ interface SortableItemProps {
   disabled?: boolean;
 }
 
-function SortableItem({
-  player,
-  onEdit,
-  onDelete,
-  disabled,
-}: SortableItemProps) {
+function SortableItem({ player, disabled }: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -176,11 +162,6 @@ function SortableItem({
                 >
                   {player.position}
                 </Badge>
-                {player.isConfirmed && (
-                  <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
-                    Confirmed
-                  </Badge>
-                )}
               </div>
               <p className="text-sm text-gray-600">{player.phone}</p>
               {player.notes && (
@@ -190,35 +171,6 @@ function SortableItem({
               )}
             </div>
           </div>
-        </div>
-
-        {/* Order Number */}
-        <div className="text-center">
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-bold text-gray-600">
-            {player.order}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center space-x-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onEdit(player)}
-            disabled={disabled}
-            className="hover:bg-yellow-50"
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onDelete(player.id)}
-            disabled={disabled}
-            className="hover:bg-red-50 text-red-600"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
         </div>
       </div>
     </div>
@@ -276,8 +228,6 @@ export default function LineupManagement() {
   const [showPlayerDialog, setShowPlayerDialog] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<LineupPlayer | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [playerToDelete, setPlayerToDelete] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<LineupPlayer | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [overId, setOverId] = useState<string | null>(null);
@@ -395,7 +345,6 @@ export default function LineupManagement() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    setActiveId(active.id as string);
 
     // Find the dragged player
     const allPlayers = [
@@ -413,7 +362,6 @@ export default function LineupManagement() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveId(null);
     setDraggedPlayer(null);
     setOverId(null);
 
@@ -624,56 +572,6 @@ export default function LineupManagement() {
       resetPlayerForm();
     } catch (error) {
       showError("Error", "Failed to save player");
-    }
-  };
-
-  const handleDeletePlayer = async () => {
-    if (!playerToDelete || !selectedLineup) return;
-
-    try {
-      const updatedLineup = { ...selectedLineup };
-
-      // Remove from team A
-      updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.filter(
-        (p) => p.id !== playerToDelete
-      );
-
-      // Remove from team B
-      updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.filter(
-        (p) => p.id !== playerToDelete
-      );
-
-      // Reorder remaining players
-      updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.map(
-        (player, index) => ({
-          ...player,
-          order: index + 1,
-        })
-      );
-
-      updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.map(
-        (player, index) => ({
-          ...player,
-          order: index + 1,
-        })
-      );
-
-      updatedLineup.totalPlayers =
-        updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
-
-      setSelectedLineup(updatedLineup);
-      setLineups((prev) =>
-        prev.map((lineup) =>
-          lineup.id === selectedLineup.id ? updatedLineup : lineup
-        )
-      );
-
-      setHasUnsavedChanges(true);
-      setShowDeleteConfirm(false);
-      setPlayerToDelete(null);
-      showSuccess("Player removed successfully");
-    } catch (error) {
-      showError("Error", "Failed to remove player");
     }
   };
 
@@ -1067,7 +965,6 @@ export default function LineupManagement() {
                                   player={player}
                                   onEdit={handleEditPlayer}
                                   onDelete={(id) => {
-                                    setPlayerToDelete(id);
                                     setShowDeleteConfirm(true);
                                   }}
                                   disabled={
@@ -1134,7 +1031,6 @@ export default function LineupManagement() {
                                   player={player}
                                   onEdit={handleEditPlayer}
                                   onDelete={(id) => {
-                                    setPlayerToDelete(id);
                                     setShowDeleteConfirm(true);
                                   }}
                                   disabled={
@@ -1302,21 +1198,6 @@ export default function LineupManagement() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setPlayerToDelete(null);
-        }}
-        onConfirm={handleDeletePlayer}
-        title="Remove Player"
-        message="Are you sure you want to remove this player from the lineup? This action cannot be undone."
-        type="danger"
-        confirmText="Remove"
-        cancelText="Cancel"
-      />
     </>
   );
 }
