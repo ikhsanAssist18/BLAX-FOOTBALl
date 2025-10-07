@@ -494,10 +494,10 @@ export default function LineupManagement() {
         },
       ];
 
-        setLineups(mockLineups);
-        if (mockLineups.length > 0) {
-          setSelectedLineup(mockLineups[0]);
-        }
+      setLineups(mockLineups);
+      if (mockLineups.length > 0) {
+        setSelectedLineup(mockLineups[0]);
+      }
     } finally {
       setLoading(false);
     }
@@ -664,7 +664,10 @@ export default function LineupManagement() {
       setHasUnsavedChanges(false);
     } catch (error) {
       console.error("Error updating player team:", error);
-      showError("Error", "Failed to update player team. Changes saved locally.");
+      showError(
+        "Error",
+        "Failed to update player team. Changes saved locally."
+      );
     }
   };
 

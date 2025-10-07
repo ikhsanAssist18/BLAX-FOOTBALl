@@ -16,7 +16,6 @@ interface UseLineupManagementReturn {
   setSelectedLineup: (lineup: LineupMatch | null) => void;
   fetchLineups: () => Promise<void>;
   updatePlayerTeam: (playerId: string, team: "A" | "B") => Promise<void>;
-  refreshLineup: (lineupId: string) => Promise<void>;
 }
 
 export function useLineupManagement(
@@ -73,37 +72,6 @@ export function useLineupManagement(
     [onError, onSuccess]
   );
 
-  const refreshLineup = useCallback(
-    async (lineupId: string) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const refreshedLineup = await lineupService.fetchLineupById(lineupId);
-
-        setLineups((prev) =>
-          prev.map((lineup) =>
-            lineup.id === lineupId ? refreshedLineup : lineup
-          )
-        );
-
-        if (selectedLineup?.id === lineupId) {
-          setSelectedLineup(refreshedLineup);
-        }
-
-        onSuccess?.("Lineup refreshed successfully");
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to refresh lineup";
-        setError(errorMessage);
-        onError?.(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [selectedLineup, onError, onSuccess]
-  );
-
   useEffect(() => {
     fetchLineups();
   }, []);
@@ -117,6 +85,5 @@ export function useLineupManagement(
     setSelectedLineup,
     fetchLineups,
     updatePlayerTeam,
-    refreshLineup,
   };
 }
