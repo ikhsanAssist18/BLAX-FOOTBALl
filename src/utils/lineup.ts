@@ -8,7 +8,6 @@ export interface LineupPlayer {
   position: "GK" | "PLAYER";
   team: "A" | "B";
   order: number;
-  isConfirmed: boolean;
   notes?: string;
 }
 
