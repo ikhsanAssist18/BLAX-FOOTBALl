@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Users,
   Trophy,
@@ -15,6 +15,9 @@ import {
   ChevronUp,
   Filter,
   GripVertical,
+  Undo2,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import Button from "../atoms/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../atoms/Card";
@@ -32,6 +35,9 @@ import {
   DragOverlay,
   DragStartEvent,
   DragOverEvent,
+  pointerWithin,
+  rectIntersection,
+  DndContextProps,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -69,14 +75,28 @@ interface LineupMatch {
 interface PlayerCardProps {
   player: LineupPlayer;
   index: number;
+  isInvalid?: boolean;
 }
 
 interface SortablePlayerCardProps {
   player: LineupPlayer;
   index: number;
+  isOverTeam?: boolean;
+  canDrop?: boolean;
 }
 
-function SortablePlayerCard({ player, index }: SortablePlayerCardProps) {
+interface HistoryState {
+  lineup: LineupMatch;
+  timestamp: number;
+  action: string;
+}
+
+function SortablePlayerCard({
+  player,
+  index,
+  isOverTeam,
+  canDrop,
+}: SortablePlayerCardProps) {
   const [expanded, setExpanded] = useState(false);
   const {
     attributes,
@@ -92,12 +112,20 @@ function SortablePlayerCard({ player, index }: SortablePlayerCardProps) {
     transition,
   };
 
+  const isGK = player.position === "GK";
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
-        isDragging ? "opacity-50 ring-2 ring-blue-500" : ""
+      className={`bg-white border-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
+        isDragging
+          ? "opacity-30 ring-4 ring-blue-400 scale-105"
+          : isOverTeam && !canDrop
+          ? "border-red-400 bg-red-50"
+          : isOverTeam && canDrop
+          ? "border-green-400 bg-green-50"
+          : "border-gray-200"
       }`}
     >
       <div className="p-4">
@@ -106,18 +134,22 @@ function SortablePlayerCard({ player, index }: SortablePlayerCardProps) {
             <button
               {...attributes}
               {...listeners}
-              className="flex-shrink-0 cursor-grab active:cursor-grabbing touch-none hover:bg-gray-100 rounded p-1 transition-colors"
-              aria-label="Drag to reorder"
+              className={`flex-shrink-0 cursor-grab active:cursor-grabbing touch-none rounded p-1.5 transition-all ${
+                isGK
+                  ? "hover:bg-amber-100 text-amber-600"
+                  : "hover:bg-blue-100 text-blue-600"
+              }`}
+              aria-label="Drag to reorder or move to another team"
             >
-              <GripVertical className="w-5 h-5 text-gray-400" />
+              <GripVertical className="w-5 h-5" />
             </button>
 
             <div className="flex-shrink-0">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ${
-                  player.position === "GK"
-                    ? "bg-gradient-to-br from-amber-400 to-orange-500"
-                    : "bg-gradient-to-br from-sky-400 to-blue-500"
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ${
+                  isGK
+                    ? "bg-gradient-to-br from-amber-400 to-orange-500 ring-amber-200"
+                    : "bg-gradient-to-br from-sky-400 to-blue-500 ring-sky-200"
                 }`}
               >
                 {player.name.charAt(0).toUpperCase()}
@@ -130,13 +162,13 @@ function SortablePlayerCard({ player, index }: SortablePlayerCardProps) {
                   {player.name}
                 </h4>
                 <Badge
-                  className={`text-xs font-medium ${
-                    player.position === "GK"
-                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-sky-50 text-sky-700 border-sky-200"
+                  className={`text-xs font-bold ${
+                    isGK
+                      ? "bg-amber-100 text-amber-800 border-amber-300"
+                      : "bg-sky-100 text-sky-800 border-sky-300"
                   }`}
                 >
-                  {player.position === "GK" ? "Goalkeeper" : "Player"}
+                  {isGK ? "⚽ GOALKEEPER" : "👤 PLAYER"}
                 </Badge>
               </div>
 
@@ -186,24 +218,29 @@ function SortablePlayerCard({ player, index }: SortablePlayerCardProps) {
   );
 }
 
-function PlayerCard({ player, index }: PlayerCardProps) {
+function PlayerCard({ player, index, isInvalid }: PlayerCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const isGK = player.position === "GK";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden opacity-50">
+    <div
+      className={`bg-white border-2 rounded-xl shadow-sm transition-all duration-200 overflow-hidden ${
+        isInvalid ? "border-red-400 opacity-50" : "border-gray-200 opacity-50"
+      }`}
+    >
       <div className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex-shrink-0 p-1">
+            <div className="flex-shrink-0 p-1.5">
               <GripVertical className="w-5 h-5 text-gray-400" />
             </div>
 
             <div className="flex-shrink-0">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ${
-                  player.position === "GK"
-                    ? "bg-gradient-to-br from-amber-400 to-orange-500"
-                    : "bg-gradient-to-br from-sky-400 to-blue-500"
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ${
+                  isGK
+                    ? "bg-gradient-to-br from-amber-400 to-orange-500 ring-amber-200"
+                    : "bg-gradient-to-br from-sky-400 to-blue-500 ring-sky-200"
                 }`}
               >
                 {player.name.charAt(0).toUpperCase()}
@@ -216,13 +253,13 @@ function PlayerCard({ player, index }: PlayerCardProps) {
                   {player.name}
                 </h4>
                 <Badge
-                  className={`text-xs font-medium ${
-                    player.position === "GK"
-                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-sky-50 text-sky-700 border-sky-200"
+                  className={`text-xs font-bold ${
+                    isGK
+                      ? "bg-amber-100 text-amber-800 border-amber-300"
+                      : "bg-sky-100 text-sky-800 border-sky-300"
                   }`}
                 >
-                  {player.position === "GK" ? "Goalkeeper" : "Player"}
+                  {isGK ? "⚽ GOALKEEPER" : "👤 PLAYER"}
                 </Badge>
               </div>
 
@@ -284,8 +321,11 @@ export default function LineupManagement() {
   const [expandedTeamB, setExpandedTeamB] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTeam, setActiveTeam] = useState<"A" | "B" | null>(null);
+  const [overTeam, setOverTeam] = useState<"A" | "B" | null>(null);
+  const [canDropInTeam, setCanDropInTeam] = useState(true);
+  const [history, setHistory] = useState<HistoryState[]>([]);
 
-  const { showError, showSuccess } = useNotifications();
+  const { showError, showSuccess, showWarning } = useNotifications();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -451,6 +491,53 @@ export default function LineupManagement() {
     }
   };
 
+  const saveToHistory = (lineup: LineupMatch, action: string) => {
+    const newHistory = [
+      ...history.slice(-9),
+      {
+        lineup: JSON.parse(JSON.stringify(lineup)),
+        timestamp: Date.now(),
+        action,
+      },
+    ];
+    setHistory(newHistory);
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) {
+      showWarning("No actions to undo");
+      return;
+    }
+
+    const previousState = history[history.length - 1];
+    setSelectedLineup(previousState.lineup);
+    setLineups(
+      lineups.map((l) =>
+        l.id === previousState.lineup.id ? previousState.lineup : l
+      )
+    );
+    setHistory(history.slice(0, -1));
+    showSuccess(`Undone: ${previousState.action}`);
+  };
+
+  const validateGKConstraint = (
+    targetTeam: "A" | "B",
+    draggedPlayer: LineupPlayer,
+    targetPlayers: LineupPlayer[]
+  ): { canDrop: boolean; needsSwap: boolean; existingGK?: LineupPlayer } => {
+    if (draggedPlayer.position !== "GK") {
+      return { canDrop: true, needsSwap: false };
+    }
+
+    const existingGK = targetPlayers.find((p) => p.position === "GK");
+
+    if (!existingGK) {
+      return { canDrop: true, needsSwap: false };
+    }
+
+    return { canDrop: true, needsSwap: true, existingGK };
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveId(active.id as string);
@@ -473,55 +560,40 @@ export default function LineupManagement() {
     const overId = over.id as string;
     const activePlayerId = active.id as string;
 
+    const draggedPlayer = [
+      ...selectedLineup.teamAPlayers,
+      ...selectedLineup.teamBPlayers,
+    ].find((p) => p.id === activePlayerId);
+
+    if (!draggedPlayer) return;
+
     if (overId === "team-a-droppable" || overId === "team-b-droppable") {
       const targetTeam = overId === "team-a-droppable" ? "A" : "B";
-      const sourceTeam = activeTeam;
+      setOverTeam(targetTeam);
 
-      if (sourceTeam && sourceTeam !== targetTeam) {
-        const updatedLineup = { ...selectedLineup };
-        let movedPlayer: LineupPlayer | undefined;
+      const targetPlayers =
+        targetTeam === "A"
+          ? selectedLineup.teamAPlayers
+          : selectedLineup.teamBPlayers;
 
-        if (sourceTeam === "A") {
-          const playerIndex = updatedLineup.teamAPlayers.findIndex(
-            (p) => p.id === activePlayerId
-          );
-          if (playerIndex !== -1) {
-            movedPlayer = { ...updatedLineup.teamAPlayers[playerIndex] };
-            updatedLineup.teamAPlayers.splice(playerIndex, 1);
-          }
-        } else {
-          const playerIndex = updatedLineup.teamBPlayers.findIndex(
-            (p) => p.id === activePlayerId
-          );
-          if (playerIndex !== -1) {
-            movedPlayer = { ...updatedLineup.teamBPlayers[playerIndex] };
-            updatedLineup.teamBPlayers.splice(playerIndex, 1);
-          }
-        }
+      const validation = validateGKConstraint(
+        targetTeam,
+        draggedPlayer,
+        targetPlayers.filter((p) => p.id !== activePlayerId)
+      );
 
-        if (movedPlayer) {
-          movedPlayer.team = targetTeam;
-          if (targetTeam === "A") {
-            movedPlayer.order = updatedLineup.teamAPlayers.length + 1;
-            updatedLineup.teamAPlayers.push(movedPlayer);
-          } else {
-            movedPlayer.order = updatedLineup.teamBPlayers.length + 1;
-            updatedLineup.teamBPlayers.push(movedPlayer);
-          }
-
-          setSelectedLineup(updatedLineup);
-          setLineups(
-            lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
-          );
-          setActiveTeam(targetTeam);
-        }
-      }
+      setCanDropInTeam(validation.canDrop);
+    } else {
+      setOverTeam(null);
+      setCanDropInTeam(true);
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+    setOverTeam(null);
+    setCanDropInTeam(true);
 
     if (!over || !selectedLineup) return;
 
@@ -529,6 +601,111 @@ export default function LineupManagement() {
     const overPlayerId = over.id as string;
 
     if (activePlayerId === overPlayerId) return;
+
+    const draggedPlayer = [
+      ...selectedLineup.teamAPlayers,
+      ...selectedLineup.teamBPlayers,
+    ].find((p) => p.id === activePlayerId);
+
+    if (!draggedPlayer) return;
+
+    if (
+      overPlayerId === "team-a-droppable" ||
+      overPlayerId === "team-b-droppable"
+    ) {
+      const targetTeam = overPlayerId === "team-a-droppable" ? "A" : "B";
+      const sourceTeam = draggedPlayer.team;
+
+      if (sourceTeam === targetTeam) return;
+
+      saveToHistory(selectedLineup, `Move ${draggedPlayer.name} preparation`);
+
+      const updatedLineup = { ...selectedLineup };
+      const targetPlayers =
+        targetTeam === "A"
+          ? updatedLineup.teamAPlayers
+          : updatedLineup.teamBPlayers;
+
+      const validation = validateGKConstraint(
+        targetTeam,
+        draggedPlayer,
+        targetPlayers
+      );
+
+      if (validation.needsSwap && validation.existingGK) {
+        const sourceTeamArray =
+          sourceTeam === "A"
+            ? updatedLineup.teamAPlayers
+            : updatedLineup.teamBPlayers;
+        const targetTeamArray =
+          targetTeam === "A"
+            ? updatedLineup.teamAPlayers
+            : updatedLineup.teamBPlayers;
+
+        const draggedIndex = sourceTeamArray.findIndex(
+          (p) => p.id === activePlayerId
+        );
+        const existingGKIndex = targetTeamArray.findIndex(
+          (p) => p.id === validation.existingGK!.id
+        );
+
+        if (draggedIndex !== -1 && existingGKIndex !== -1) {
+          const [removed] = sourceTeamArray.splice(draggedIndex, 1);
+          const [existingGK] = targetTeamArray.splice(existingGKIndex, 1);
+
+          removed.team = targetTeam;
+          existingGK.team = sourceTeam;
+
+          targetTeamArray.push(removed);
+          sourceTeamArray.push(existingGK);
+
+          sourceTeamArray.forEach((p, i) => (p.order = i + 1));
+          targetTeamArray.forEach((p, i) => (p.order = i + 1));
+
+          setSelectedLineup(updatedLineup);
+          setLineups(
+            lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
+          );
+
+          showSuccess(
+            `Swapped goalkeepers: ${draggedPlayer.name} ↔ ${validation.existingGK.name}`
+          );
+        }
+      } else {
+        const sourceTeamArray =
+          sourceTeam === "A"
+            ? updatedLineup.teamAPlayers
+            : updatedLineup.teamBPlayers;
+        const targetTeamArray =
+          targetTeam === "A"
+            ? updatedLineup.teamAPlayers
+            : updatedLineup.teamBPlayers;
+
+        const draggedIndex = sourceTeamArray.findIndex(
+          (p) => p.id === activePlayerId
+        );
+
+        if (draggedIndex !== -1) {
+          const [removed] = sourceTeamArray.splice(draggedIndex, 1);
+          removed.team = targetTeam;
+          removed.order = targetTeamArray.length + 1;
+          targetTeamArray.push(removed);
+
+          sourceTeamArray.forEach((p, i) => (p.order = i + 1));
+
+          setSelectedLineup(updatedLineup);
+          setLineups(
+            lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
+          );
+
+          showSuccess(
+            `Moved ${draggedPlayer.name} to Team ${targetTeam}`
+          );
+        }
+      }
+
+      return;
+    }
 
     const updatedLineup = { ...selectedLineup };
 
@@ -546,6 +723,8 @@ export default function LineupManagement() {
     );
 
     if (activeInTeamA && overInTeamA) {
+      saveToHistory(selectedLineup, `Reorder in Team A`);
+
       const oldIndex = updatedLineup.teamAPlayers.findIndex(
         (p) => p.id === activePlayerId
       );
@@ -566,8 +745,10 @@ export default function LineupManagement() {
       setLineups(
         lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
       );
-      showSuccess("Player reordered successfully");
+      showSuccess("Player reordered in Team A");
     } else if (activeInTeamB && overInTeamB) {
+      saveToHistory(selectedLineup, `Reorder in Team B`);
+
       const oldIndex = updatedLineup.teamBPlayers.findIndex(
         (p) => p.id === activePlayerId
       );
@@ -588,7 +769,7 @@ export default function LineupManagement() {
       setLineups(
         lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
       );
-      showSuccess("Player reordered successfully");
+      showSuccess("Player reordered in Team B");
     }
   };
 
@@ -634,6 +815,15 @@ export default function LineupManagement() {
     return matchesSearch && matchesStatus;
   });
 
+  const getTeamGKCount = (team: "A" | "B") => {
+    if (!selectedLineup) return 0;
+    const players =
+      team === "A"
+        ? selectedLineup.teamAPlayers
+        : selectedLineup.teamBPlayers;
+    return players.filter((p) => p.position === "GK").length;
+  };
+
   if (loading) {
     return (
       <div className="space-y-6 animate-fadeIn">
@@ -659,13 +849,26 @@ export default function LineupManagement() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Lineup Management
-          </h2>
-          <p className="text-gray-600">
-            View and explore player lineups for all scheduled matches
-          </p>
+        <div className="flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Lineup Management
+            </h2>
+            <p className="text-gray-600">
+              Drag and drop players between teams with smart GK constraints
+            </p>
+          </div>
+
+          {history.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={handleUndo}
+              className="flex items-center gap-2"
+            >
+              <Undo2 className="w-4 h-4" />
+              Undo ({history.length})
+            </Button>
+          )}
         </div>
       </div>
 
@@ -772,216 +975,274 @@ export default function LineupManagement() {
           {selectedLineup ? (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCenter}
+              collisionDetection={rectIntersection}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
             >
-            <div className="space-y-6">
-              <Card className="shadow-lg border-blue-200 bg-gradient-to-br from-blue-50 to-white">
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          {selectedLineup.scheduleName}
-                        </h3>
-                        <Badge
-                          className={`font-medium flex items-center gap-1.5 ${getStatusColor(
-                            selectedLineup.status
-                          )}`}
-                        >
-                          {getStatusIcon(selectedLineup.status)}
-                          {selectedLineup.status}
-                        </Badge>
+              <div className="space-y-6">
+                <Card className="shadow-lg border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-2xl font-bold text-gray-900">
+                            {selectedLineup.scheduleName}
+                          </h3>
+                          <Badge
+                            className={`font-medium flex items-center gap-1.5 ${getStatusColor(
+                              selectedLineup.status
+                            )}`}
+                          >
+                            {getStatusIcon(selectedLineup.status)}
+                            {selectedLineup.status}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <MapPin className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <span className="font-medium">
+                              {selectedLineup.venue}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <Clock className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <span className="font-medium">
+                              {formatDate(selectedLineup.date)} •{" "}
+                              {selectedLineup.time}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <Users className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <span className="font-medium">
+                              {selectedLineup.totalPlayers} players total
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <MapPin className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <span className="font-medium">
-                            {selectedLineup.venue}
-                          </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-md">
+                        <GripVertical className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        Smart Drag & Drop System
+                        <Badge className="bg-green-100 text-green-700 text-xs">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Active
+                        </Badge>
+                      </h4>
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <p>
+                            <span className="font-semibold">Reorder:</span> Drag
+                            players within the same team to change positions
+                          </p>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <Clock className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <span className="font-medium">
-                            {formatDate(selectedLineup.date)} • {selectedLineup.time}
-                          </span>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <p>
+                            <span className="font-semibold">Transfer:</span>{" "}
+                            Drag players between Team A and Team B
+                          </p>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <Users className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <span className="font-medium">
-                            {selectedLineup.totalPlayers} players total
-                          </span>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <p>
+                            <span className="font-semibold text-amber-700">
+                              GK Rule:
+                            </span>{" "}
+                            Each team can have only 1 goalkeeper - dragging a GK
+                            to a team with a GK will automatically swap them
+                          </p>
                         </div>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    <GripVertical className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-blue-900 mb-1">
-                      Drag & Drop Enabled
-                    </p>
-                    <p className="text-sm text-blue-700">
-                      Drag players to reorder them within a team or move them between Team A and Team B
-                    </p>
-                  </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <Card className="shadow-lg border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-white overflow-hidden">
-                  <CardHeader className="border-b border-rose-100 bg-rose-50/50">
-                    <button
-                      onClick={() => setExpandedTeamA(!expandedTeamA)}
-                      className="w-full"
-                    >
-                      <CardTitle className="flex items-center justify-between text-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-red-600 rounded-xl shadow-md flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="text-left">
-                            <div className="text-gray-900 font-bold">
-                              Team A
-                            </div>
-                            <div className="text-xs font-normal text-gray-600">
-                              {selectedLineup.teamAPlayers.length} players
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-rose-100 text-rose-700 font-semibold">
-                            {selectedLineup.teamAPlayers.length}
-                          </Badge>
-                          {expandedTeamA ? (
-                            <ChevronUp className="w-5 h-5 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                      </CardTitle>
-                    </button>
-                  </CardHeader>
-                  {expandedTeamA && (
-                    <CardContent className="p-4">
-                      <SortableContext
-                        items={selectedLineup.teamAPlayers.map((p) => p.id)}
-                        strategy={verticalListSortingStrategy}
-                        id="team-a-droppable"
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <Card
+                    className={`shadow-lg border-2 bg-gradient-to-br from-rose-50 to-white overflow-hidden transition-all duration-300 ${
+                      overTeam === "A"
+                        ? canDropInTeam
+                          ? "border-green-400 ring-4 ring-green-200"
+                          : "border-red-400 ring-4 ring-red-200"
+                        : "border-rose-200"
+                    }`}
+                  >
+                    <CardHeader className="border-b border-rose-100 bg-rose-50/50">
+                      <button
+                        onClick={() => setExpandedTeamA(!expandedTeamA)}
+                        className="w-full"
                       >
-                        <div className="space-y-3 min-h-[200px] transition-colors">
-                          {selectedLineup.teamAPlayers.length > 0 ? (
-                            selectedLineup.teamAPlayers.map((player, index) => (
-                              <SortablePlayerCard
-                                key={player.id}
-                                player={player}
-                                index={index}
-                              />
-                            ))
-                          ) : (
-                            <div className="text-center py-12 border-2 border-dashed border-rose-200 rounded-xl bg-rose-50/30">
-                              <Users className="w-12 h-12 text-rose-300 mx-auto mb-3" />
-                              <p className="text-rose-600 font-medium">
-                                No players in Team A
-                              </p>
-                              <p className="text-rose-500 text-sm mt-1">
-                                Drop players here
-                              </p>
+                        <CardTitle className="flex items-center justify-between text-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-red-600 rounded-xl shadow-md flex items-center justify-center">
+                              <Shield className="w-5 h-5 text-white" />
                             </div>
-                          )}
+                            <div className="text-left">
+                              <div className="text-gray-900 font-bold">
+                                Team A
+                              </div>
+                              <div className="text-xs font-normal text-gray-600">
+                                {selectedLineup.teamAPlayers.length} players •{" "}
+                                {getTeamGKCount("A")} GK
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-rose-100 text-rose-700 font-semibold">
+                              {selectedLineup.teamAPlayers.length}
+                            </Badge>
+                            {expandedTeamA ? (
+                              <ChevronUp className="w-5 h-5 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-gray-400" />
+                            )}
+                          </div>
+                        </CardTitle>
+                      </button>
+                    </CardHeader>
+                    {expandedTeamA && (
+                      <CardContent className="p-4">
+                        <div id="team-a-droppable">
+                          <SortableContext
+                            items={selectedLineup.teamAPlayers.map((p) => p.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-3 min-h-[200px] transition-colors">
+                            {selectedLineup.teamAPlayers.length > 0 ? (
+                              selectedLineup.teamAPlayers.map(
+                                (player, index) => (
+                                  <SortablePlayerCard
+                                    key={player.id}
+                                    player={player}
+                                    index={index}
+                                    isOverTeam={overTeam === "A"}
+                                    canDrop={canDropInTeam}
+                                  />
+                                )
+                              )
+                            ) : (
+                              <div className="text-center py-12 border-2 border-dashed border-rose-200 rounded-xl bg-rose-50/30">
+                                <Users className="w-12 h-12 text-rose-300 mx-auto mb-3" />
+                                <p className="text-rose-600 font-medium">
+                                  No players in Team A
+                                </p>
+                                <p className="text-rose-500 text-sm mt-1">
+                                  Drop players here
+                                </p>
+                              </div>
+                            )}
+                            </div>
+                          </SortableContext>
                         </div>
-                      </SortableContext>
-                    </CardContent>
-                  )}
-                </Card>
+                      </CardContent>
+                    )}
+                  </Card>
 
-                <Card className="shadow-lg border-2 border-sky-200 bg-gradient-to-br from-sky-50 to-white overflow-hidden">
-                  <CardHeader className="border-b border-sky-100 bg-sky-50/50">
-                    <button
-                      onClick={() => setExpandedTeamB(!expandedTeamB)}
-                      className="w-full"
-                    >
-                      <CardTitle className="flex items-center justify-between text-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl shadow-md flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="text-left">
-                            <div className="text-gray-900 font-bold">
-                              Team B
-                            </div>
-                            <div className="text-xs font-normal text-gray-600">
-                              {selectedLineup.teamBPlayers.length} players
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-sky-100 text-sky-700 font-semibold">
-                            {selectedLineup.teamBPlayers.length}
-                          </Badge>
-                          {expandedTeamB ? (
-                            <ChevronUp className="w-5 h-5 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                      </CardTitle>
-                    </button>
-                  </CardHeader>
-                  {expandedTeamB && (
-                    <CardContent className="p-4">
-                      <SortableContext
-                        items={selectedLineup.teamBPlayers.map((p) => p.id)}
-                        strategy={verticalListSortingStrategy}
-                        id="team-b-droppable"
+                  <Card
+                    className={`shadow-lg border-2 bg-gradient-to-br from-sky-50 to-white overflow-hidden transition-all duration-300 ${
+                      overTeam === "B"
+                        ? canDropInTeam
+                          ? "border-green-400 ring-4 ring-green-200"
+                          : "border-red-400 ring-4 ring-red-200"
+                        : "border-sky-200"
+                    }`}
+                  >
+                    <CardHeader className="border-b border-sky-100 bg-sky-50/50">
+                      <button
+                        onClick={() => setExpandedTeamB(!expandedTeamB)}
+                        className="w-full"
                       >
-                        <div className="space-y-3 min-h-[200px] transition-colors">
-                          {selectedLineup.teamBPlayers.length > 0 ? (
-                            selectedLineup.teamBPlayers.map((player, index) => (
-                              <SortablePlayerCard
-                                key={player.id}
-                                player={player}
-                                index={index}
-                              />
-                            ))
-                          ) : (
-                            <div className="text-center py-12 border-2 border-dashed border-sky-200 rounded-xl bg-sky-50/30">
-                              <Users className="w-12 h-12 text-sky-300 mx-auto mb-3" />
-                              <p className="text-sky-600 font-medium">
-                                No players in Team B
-                              </p>
-                              <p className="text-sky-500 text-sm mt-1">
-                                Drop players here
-                              </p>
+                        <CardTitle className="flex items-center justify-between text-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl shadow-md flex items-center justify-center">
+                              <Shield className="w-5 h-5 text-white" />
                             </div>
-                          )}
+                            <div className="text-left">
+                              <div className="text-gray-900 font-bold">
+                                Team B
+                              </div>
+                              <div className="text-xs font-normal text-gray-600">
+                                {selectedLineup.teamBPlayers.length} players •{" "}
+                                {getTeamGKCount("B")} GK
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-sky-100 text-sky-700 font-semibold">
+                              {selectedLineup.teamBPlayers.length}
+                            </Badge>
+                            {expandedTeamB ? (
+                              <ChevronUp className="w-5 h-5 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-gray-400" />
+                            )}
+                          </div>
+                        </CardTitle>
+                      </button>
+                    </CardHeader>
+                    {expandedTeamB && (
+                      <CardContent className="p-4">
+                        <div id="team-b-droppable">
+                          <SortableContext
+                            items={selectedLineup.teamBPlayers.map((p) => p.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-3 min-h-[200px] transition-colors">
+                            {selectedLineup.teamBPlayers.length > 0 ? (
+                              selectedLineup.teamBPlayers.map(
+                                (player, index) => (
+                                  <SortablePlayerCard
+                                    key={player.id}
+                                    player={player}
+                                    index={index}
+                                    isOverTeam={overTeam === "B"}
+                                    canDrop={canDropInTeam}
+                                  />
+                                )
+                              )
+                            ) : (
+                              <div className="text-center py-12 border-2 border-dashed border-sky-200 rounded-xl bg-sky-50/30">
+                                <Users className="w-12 h-12 text-sky-300 mx-auto mb-3" />
+                                <p className="text-sky-600 font-medium">
+                                  No players in Team B
+                                </p>
+                                <p className="text-sky-500 text-sm mt-1">
+                                  Drop players here
+                                </p>
+                              </div>
+                            )}
+                            </div>
+                          </SortableContext>
                         </div>
-                      </SortableContext>
-                    </CardContent>
-                  )}
-                </Card>
-              </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                </div>
 
-              <DragOverlay>
-                {activeId && activeDragPlayer ? (
-                  <PlayerCard player={activeDragPlayer} index={0} />
-                ) : null}
-              </DragOverlay>
-            </div>
+                <DragOverlay>
+                  {activeId && activeDragPlayer ? (
+                    <PlayerCard player={activeDragPlayer} index={0} />
+                  ) : null}
+                </DragOverlay>
+              </div>
             </DndContext>
           ) : (
             <Card className="shadow-lg">
