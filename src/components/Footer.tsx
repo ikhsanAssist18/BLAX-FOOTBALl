@@ -9,6 +9,8 @@ import {
   Twitter,
   Youtube,
 } from "lucide-react";
+import BlaxLogo from "@/assets/blax-logo.png";
+import Image from "next/image";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -21,7 +23,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <div className="flex items-center justify-center">
-                <Calendar className="w-8 h-8 text-sky-500" />
+                <Image src={BlaxLogo} alt="Logo" width={50} height={50} />
               </div>
               <h3 className="text-xl font-bold">Blax Football</h3>
             </div>

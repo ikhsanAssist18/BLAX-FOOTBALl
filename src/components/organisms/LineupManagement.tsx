@@ -324,6 +324,9 @@ export default function LineupManagement() {
   const [overTeam, setOverTeam] = useState<"A" | "B" | null>(null);
   const [canDropInTeam, setCanDropInTeam] = useState(true);
   const [history, setHistory] = useState<HistoryState[]>([]);
+  const [draggedPlayer, setDraggedPlayer] = useState<LineupPlayer | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { showError, showSuccess, showWarning } = useNotifications();
 
@@ -542,235 +545,121 @@ export default function LineupManagement() {
     const { active } = event;
     setActiveId(active.id as string);
 
-    if (selectedLineup) {
-      const playerInA = selectedLineup.teamAPlayers.find(
-        (p) => p.id === active.id
-      );
-      const playerInB = selectedLineup.teamBPlayers.find(
-        (p) => p.id === active.id
-      );
-      setActiveTeam(playerInA ? "A" : playerInB ? "B" : null);
-    }
+    // Find the dragged player
+    const allPlayers = [
+      ...(selectedLineup?.teamAPlayers || []),
+      ...(selectedLineup?.teamBPlayers || []),
+    ];
+    const player = allPlayers.find((p) => p.id === active.id);
+    setDraggedPlayer(player || null);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over || !selectedLineup) return;
-
-    const overId = over.id as string;
-    const activePlayerId = active.id as string;
-
-    const draggedPlayer = [
-      ...selectedLineup.teamAPlayers,
-      ...selectedLineup.teamBPlayers,
-    ].find((p) => p.id === activePlayerId);
-
-    if (!draggedPlayer) return;
-
-    if (overId === "team-a-droppable" || overId === "team-b-droppable") {
-      const targetTeam = overId === "team-a-droppable" ? "A" : "B";
-      setOverTeam(targetTeam);
-
-      const targetPlayers =
-        targetTeam === "A"
-          ? selectedLineup.teamAPlayers
-          : selectedLineup.teamBPlayers;
-
-      const validation = validateGKConstraint(
-        targetTeam,
-        draggedPlayer,
-        targetPlayers.filter((p) => p.id !== activePlayerId)
-      );
-
-      setCanDropInTeam(validation.canDrop);
-    } else {
-      setOverTeam(null);
-      setCanDropInTeam(true);
-    }
+    const { over } = event;
+    setOverId(over ? (over.id as string) : null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
-    setOverTeam(null);
-    setCanDropInTeam(true);
+    setDraggedPlayer(null);
+    setOverId(null);
 
     if (!over || !selectedLineup) return;
 
-    const activePlayerId = active.id as string;
-    const overPlayerId = over.id as string;
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
-    if (activePlayerId === overPlayerId) return;
+    if (activeId === overId) return;
 
-    const draggedPlayer = [
+    // Find the active player
+    const allPlayers = [
       ...selectedLineup.teamAPlayers,
       ...selectedLineup.teamBPlayers,
-    ].find((p) => p.id === activePlayerId);
+    ];
+    const activePlayer = allPlayers.find((p) => p.id === activeId);
+    if (!activePlayer) return;
 
-    if (!draggedPlayer) return;
+    // Check if we're dropping on team container or another player
+    let targetTeam: "A" | "B" | null = null;
+    let targetIndex: number = -1;
 
-    if (
-      overPlayerId === "team-a-droppable" ||
-      overPlayerId === "team-b-droppable"
-    ) {
-      const targetTeam = overPlayerId === "team-a-droppable" ? "A" : "B";
-      const sourceTeam = draggedPlayer.team;
-
-      if (sourceTeam === targetTeam) return;
-
-      saveToHistory(selectedLineup, `Move ${draggedPlayer.name} preparation`);
-
-      const updatedLineup = { ...selectedLineup };
-      const targetPlayers =
-        targetTeam === "A"
-          ? updatedLineup.teamAPlayers
-          : updatedLineup.teamBPlayers;
-
-      const validation = validateGKConstraint(
-        targetTeam,
-        draggedPlayer,
-        targetPlayers
-      );
-
-      if (validation.needsSwap && validation.existingGK) {
-        const sourceTeamArray =
-          sourceTeam === "A"
-            ? updatedLineup.teamAPlayers
-            : updatedLineup.teamBPlayers;
-        const targetTeamArray =
+    // Check if dropping on team containers
+    if (overId === "team-A-container") {
+      targetTeam = "A";
+      targetIndex = selectedLineup.teamAPlayers.length;
+    } else if (overId === "team-B-container") {
+      targetTeam = "B";
+      targetIndex = selectedLineup.teamBPlayers.length;
+    } else {
+      // Dropping on another player
+      const overPlayer = allPlayers.find((p) => p.id === overId);
+      if (overPlayer) {
+        targetTeam = overPlayer.team;
+        const teamPlayers =
           targetTeam === "A"
-            ? updatedLineup.teamAPlayers
-            : updatedLineup.teamBPlayers;
-
-        const draggedIndex = sourceTeamArray.findIndex(
-          (p) => p.id === activePlayerId
-        );
-        const existingGKIndex = targetTeamArray.findIndex(
-          (p) => p.id === validation.existingGK!.id
-        );
-
-        if (draggedIndex !== -1 && existingGKIndex !== -1) {
-          const [removed] = sourceTeamArray.splice(draggedIndex, 1);
-          const [existingGK] = targetTeamArray.splice(existingGKIndex, 1);
-
-          removed.team = targetTeam;
-          existingGK.team = sourceTeam;
-
-          targetTeamArray.push(removed);
-          sourceTeamArray.push(existingGK);
-
-          sourceTeamArray.forEach((p, i) => (p.order = i + 1));
-          targetTeamArray.forEach((p, i) => (p.order = i + 1));
-
-          setSelectedLineup(updatedLineup);
-          setLineups(
-            lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
-          );
-
-          showSuccess(
-            `Swapped goalkeepers: ${draggedPlayer.name} ↔ ${validation.existingGK.name}`
-          );
-        }
-      } else {
-        const sourceTeamArray =
-          sourceTeam === "A"
-            ? updatedLineup.teamAPlayers
-            : updatedLineup.teamBPlayers;
-        const targetTeamArray =
-          targetTeam === "A"
-            ? updatedLineup.teamAPlayers
-            : updatedLineup.teamBPlayers;
-
-        const draggedIndex = sourceTeamArray.findIndex(
-          (p) => p.id === activePlayerId
-        );
-
-        if (draggedIndex !== -1) {
-          const [removed] = sourceTeamArray.splice(draggedIndex, 1);
-          removed.team = targetTeam;
-          removed.order = targetTeamArray.length + 1;
-          targetTeamArray.push(removed);
-
-          sourceTeamArray.forEach((p, i) => (p.order = i + 1));
-
-          setSelectedLineup(updatedLineup);
-          setLineups(
-            lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
-          );
-
-          showSuccess(
-            `Moved ${draggedPlayer.name} to Team ${targetTeam}`
-          );
-        }
+            ? selectedLineup.teamAPlayers
+            : selectedLineup.teamBPlayers;
+        targetIndex = teamPlayers.findIndex((p) => p.id === overId);
       }
-
-      return;
     }
 
-    const updatedLineup = { ...selectedLineup };
+    if (targetTeam === null || targetIndex === -1) return;
 
-    const activeInTeamA = updatedLineup.teamAPlayers.find(
-      (p) => p.id === activePlayerId
-    );
-    const activeInTeamB = updatedLineup.teamBPlayers.find(
-      (p) => p.id === activePlayerId
-    );
-    const overInTeamA = updatedLineup.teamAPlayers.find(
-      (p) => p.id === overPlayerId
-    );
-    const overInTeamB = updatedLineup.teamBPlayers.find(
-      (p) => p.id === overPlayerId
-    );
+    // Create updated lineup
+    let updatedLineup = { ...selectedLineup };
 
-    if (activeInTeamA && overInTeamA) {
-      saveToHistory(selectedLineup, `Reorder in Team A`);
-
-      const oldIndex = updatedLineup.teamAPlayers.findIndex(
-        (p) => p.id === activePlayerId
+    // Remove player from current team
+    if (activePlayer.team === "A") {
+      updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.filter(
+        (p) => p.id !== activeId
       );
-      const newIndex = updatedLineup.teamAPlayers.findIndex(
-        (p) => p.id === overPlayerId
+    } else {
+      updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.filter(
+        (p) => p.id !== activeId
       );
-      updatedLineup.teamAPlayers = arrayMove(
-        updatedLineup.teamAPlayers,
-        oldIndex,
-        newIndex
-      );
-      updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.map((p, i) => ({
-        ...p,
-        order: i + 1,
-      }));
-
-      setSelectedLineup(updatedLineup);
-      setLineups(
-        lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
-      );
-      showSuccess("Player reordered in Team A");
-    } else if (activeInTeamB && overInTeamB) {
-      saveToHistory(selectedLineup, `Reorder in Team B`);
-
-      const oldIndex = updatedLineup.teamBPlayers.findIndex(
-        (p) => p.id === activePlayerId
-      );
-      const newIndex = updatedLineup.teamBPlayers.findIndex(
-        (p) => p.id === overPlayerId
-      );
-      updatedLineup.teamBPlayers = arrayMove(
-        updatedLineup.teamBPlayers,
-        oldIndex,
-        newIndex
-      );
-      updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.map((p, i) => ({
-        ...p,
-        order: i + 1,
-      }));
-
-      setSelectedLineup(updatedLineup);
-      setLineups(
-        lineups.map((l) => (l.id === updatedLineup.id ? updatedLineup : l))
-      );
-      showSuccess("Player reordered in Team B");
     }
+
+    // Update player's team
+    const updatedPlayer = { ...activePlayer, team: targetTeam };
+
+    // Add player to target team at target index
+    if (targetTeam === "A") {
+      updatedLineup.teamAPlayers.splice(targetIndex, 0, updatedPlayer);
+    } else {
+      updatedLineup.teamBPlayers.splice(targetIndex, 0, updatedPlayer);
+    }
+
+    // Update order numbers for both teams
+    updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.map(
+      (player, index) => ({
+        ...player,
+        order: index + 1,
+      })
+    );
+
+    updatedLineup.teamBPlayers = updatedLineup.teamBPlayers.map(
+      (player, index) => ({
+        ...player,
+        order: index + 1,
+      })
+    );
+
+    // Update total players
+    updatedLineup.totalPlayers =
+      updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
+
+    setSelectedLineup(updatedLineup);
+    setHasUnsavedChanges(true);
+
+    // Update in lineups array
+    setLineups((prev) =>
+      prev.map((lineup) =>
+        lineup.id === selectedLineup.id ? updatedLineup : lineup
+      )
+    );
+
+    showSuccess(`Player moved to Team ${targetTeam}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -818,9 +707,7 @@ export default function LineupManagement() {
   const getTeamGKCount = (team: "A" | "B") => {
     if (!selectedLineup) return 0;
     const players =
-      team === "A"
-        ? selectedLineup.teamAPlayers
-        : selectedLineup.teamBPlayers;
+      team === "A" ? selectedLineup.teamAPlayers : selectedLineup.teamBPlayers;
     return players.filter((p) => p.position === "GK").length;
   };
 
@@ -1126,29 +1013,29 @@ export default function LineupManagement() {
                             strategy={verticalListSortingStrategy}
                           >
                             <div className="space-y-3 min-h-[200px] transition-colors">
-                            {selectedLineup.teamAPlayers.length > 0 ? (
-                              selectedLineup.teamAPlayers.map(
-                                (player, index) => (
-                                  <SortablePlayerCard
-                                    key={player.id}
-                                    player={player}
-                                    index={index}
-                                    isOverTeam={overTeam === "A"}
-                                    canDrop={canDropInTeam}
-                                  />
+                              {selectedLineup.teamAPlayers.length > 0 ? (
+                                selectedLineup.teamAPlayers.map(
+                                  (player, index) => (
+                                    <SortablePlayerCard
+                                      key={player.id}
+                                      player={player}
+                                      index={index}
+                                      isOverTeam={overTeam === "A"}
+                                      canDrop={canDropInTeam}
+                                    />
+                                  )
                                 )
-                              )
-                            ) : (
-                              <div className="text-center py-12 border-2 border-dashed border-rose-200 rounded-xl bg-rose-50/30">
-                                <Users className="w-12 h-12 text-rose-300 mx-auto mb-3" />
-                                <p className="text-rose-600 font-medium">
-                                  No players in Team A
-                                </p>
-                                <p className="text-rose-500 text-sm mt-1">
-                                  Drop players here
-                                </p>
-                              </div>
-                            )}
+                              ) : (
+                                <div className="text-center py-12 border-2 border-dashed border-rose-200 rounded-xl bg-rose-50/30">
+                                  <Users className="w-12 h-12 text-rose-300 mx-auto mb-3" />
+                                  <p className="text-rose-600 font-medium">
+                                    No players in Team A
+                                  </p>
+                                  <p className="text-rose-500 text-sm mt-1">
+                                    Drop players here
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </SortableContext>
                         </div>
@@ -1206,29 +1093,29 @@ export default function LineupManagement() {
                             strategy={verticalListSortingStrategy}
                           >
                             <div className="space-y-3 min-h-[200px] transition-colors">
-                            {selectedLineup.teamBPlayers.length > 0 ? (
-                              selectedLineup.teamBPlayers.map(
-                                (player, index) => (
-                                  <SortablePlayerCard
-                                    key={player.id}
-                                    player={player}
-                                    index={index}
-                                    isOverTeam={overTeam === "B"}
-                                    canDrop={canDropInTeam}
-                                  />
+                              {selectedLineup.teamBPlayers.length > 0 ? (
+                                selectedLineup.teamBPlayers.map(
+                                  (player, index) => (
+                                    <SortablePlayerCard
+                                      key={player.id}
+                                      player={player}
+                                      index={index}
+                                      isOverTeam={overTeam === "B"}
+                                      canDrop={canDropInTeam}
+                                    />
+                                  )
                                 )
-                              )
-                            ) : (
-                              <div className="text-center py-12 border-2 border-dashed border-sky-200 rounded-xl bg-sky-50/30">
-                                <Users className="w-12 h-12 text-sky-300 mx-auto mb-3" />
-                                <p className="text-sky-600 font-medium">
-                                  No players in Team B
-                                </p>
-                                <p className="text-sky-500 text-sm mt-1">
-                                  Drop players here
-                                </p>
-                              </div>
-                            )}
+                              ) : (
+                                <div className="text-center py-12 border-2 border-dashed border-sky-200 rounded-xl bg-sky-50/30">
+                                  <Users className="w-12 h-12 text-sky-300 mx-auto mb-3" />
+                                  <p className="text-sky-600 font-medium">
+                                    No players in Team B
+                                  </p>
+                                  <p className="text-sky-500 text-sm mt-1">
+                                    Drop players here
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </SortableContext>
                         </div>
@@ -1252,8 +1139,8 @@ export default function LineupManagement() {
                   No Lineup Selected
                 </h3>
                 <p className="text-gray-600 max-w-md mx-auto">
-                  Select a match from the sidebar to view its lineup details
-                  and player information
+                  Select a match from the sidebar to view its lineup details and
+                  player information
                 </p>
               </CardContent>
             </Card>
