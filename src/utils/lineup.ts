@@ -1,6 +1,5 @@
 import { apiClient } from "./api";
 
-// Types for lineup management
 export interface LineupPlayer {
   id: string;
   name: string;
@@ -9,21 +8,63 @@ export interface LineupPlayer {
   team: "A" | "B";
   order: number;
   notes?: string;
+  type?: string;
 }
 
 export interface LineupMatch {
   id: string;
-  scheduleId: string;
+  scheduleId?: string;
   scheduleName: string;
   venue: string;
   date: string;
   time: string;
-  status: "DRAFT" | "CONFIRMED" | "COMPLETED";
+  status: "DRAFT" | "CONFIRMED" | "COMPLETED" | "ACTIVE";
   totalPlayers: number;
   teamAPlayers: LineupPlayer[];
   teamBPlayers: LineupPlayer[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  bookedSlots?: number;
+  openSlots?: number;
+  totalSlots?: number;
+}
+
+export interface ApiLineupResponse {
+  id: string;
+  scheduleName: string;
+  venue: string;
+  date: string;
+  time: string;
+  status: "DRAFT" | "CONFIRMED" | "COMPLETED" | "ACTIVE";
+  bookedSlots?: number;
+  openSlots?: number;
+  totalSlots?: number;
+  lineUp: {
+    A?: {
+      GK?: {
+        name: string;
+        phone: string;
+        type?: string;
+      };
+      PLAYERS?: Array<{
+        name: string;
+        phone: string;
+        type?: string;
+      }>;
+    };
+    B?: {
+      GK?: {
+        name: string;
+        phone: string;
+        type?: string;
+      };
+      PLAYERS?: Array<{
+        name: string;
+        phone: string;
+        type?: string;
+      }>;
+    };
+  };
 }
 
 export interface LineupPayload {
@@ -42,8 +83,81 @@ export interface PlayerPayload {
   notes?: string;
 }
 
+function transformApiResponseToLineup(apiResponse: ApiLineupResponse): LineupMatch {
+  const teamAPlayers: LineupPlayer[] = [];
+  const teamBPlayers: LineupPlayer[] = [];
+
+  if (apiResponse.lineUp.A) {
+    if (apiResponse.lineUp.A.GK) {
+      teamAPlayers.push({
+        id: `${apiResponse.id}-A-GK`,
+        name: apiResponse.lineUp.A.GK.name,
+        phone: apiResponse.lineUp.A.GK.phone,
+        position: "GK",
+        team: "A",
+        order: 1,
+        type: apiResponse.lineUp.A.GK.type,
+      });
+    }
+    if (apiResponse.lineUp.A.PLAYERS) {
+      apiResponse.lineUp.A.PLAYERS.forEach((player, index) => {
+        teamAPlayers.push({
+          id: `${apiResponse.id}-A-P-${index}`,
+          name: player.name,
+          phone: player.phone,
+          position: "PLAYER",
+          team: "A",
+          order: teamAPlayers.length + 1,
+          type: player.type,
+        });
+      });
+    }
+  }
+
+  if (apiResponse.lineUp.B) {
+    if (apiResponse.lineUp.B.GK) {
+      teamBPlayers.push({
+        id: `${apiResponse.id}-B-GK`,
+        name: apiResponse.lineUp.B.GK.name,
+        phone: apiResponse.lineUp.B.GK.phone,
+        position: "GK",
+        team: "B",
+        order: 1,
+        type: apiResponse.lineUp.B.GK.type,
+      });
+    }
+    if (apiResponse.lineUp.B.PLAYERS) {
+      apiResponse.lineUp.B.PLAYERS.forEach((player, index) => {
+        teamBPlayers.push({
+          id: `${apiResponse.id}-B-P-${index}`,
+          name: player.name,
+          phone: player.phone,
+          position: "PLAYER",
+          team: "B",
+          order: teamBPlayers.length + 1,
+          type: player.type,
+        });
+      });
+    }
+  }
+
+  return {
+    id: apiResponse.id,
+    scheduleName: apiResponse.scheduleName,
+    venue: apiResponse.venue,
+    date: apiResponse.date,
+    time: apiResponse.time,
+    status: apiResponse.status,
+    totalPlayers: teamAPlayers.length + teamBPlayers.length,
+    teamAPlayers,
+    teamBPlayers,
+    bookedSlots: apiResponse.bookedSlots,
+    openSlots: apiResponse.openSlots,
+    totalSlots: apiResponse.totalSlots,
+  };
+}
+
 class LineupService {
-  // Get all lineups with optional filters
   async getLineups(
     search?: string,
     status?: string,
@@ -62,13 +176,22 @@ class LineupService {
     if (limit) queryParams.append("limit", limit.toString());
 
     const response = await apiClient.get(`/api/v1/lineups?${queryParams}`);
-    return response;
+
+    const transformedData = Array.isArray(response)
+      ? response.map(transformApiResponseToLineup)
+      : response.data?.map(transformApiResponseToLineup) || [];
+
+    return {
+      data: transformedData,
+      total: response.total || transformedData.length,
+      page: response.page || 1,
+      limit: response.limit || transformedData.length,
+    };
   }
 
-  // Get specific lineup by ID
   async getLineupById(id: string): Promise<LineupMatch> {
-    const response = await apiClient.get(`/api/v1/lineups/${id}`);
-    return response.data;
+    const response: ApiLineupResponse = await apiClient.get(`/api/v1/lineups/${id}`);
+    return transformApiResponseToLineup(response);
   }
 
   // Create new lineup
@@ -94,14 +217,17 @@ class LineupService {
     return response.data;
   }
 
-  // Update player in lineup
   async updatePlayer(
-    lineupId: string, 
-    playerId: string, 
+    lineupId: string,
+    playerId: string,
     playerData: Partial<PlayerPayload>
   ): Promise<LineupPlayer> {
     const response = await apiClient.put(`/api/v1/lineups/${lineupId}/players/${playerId}`, playerData);
     return response.data;
+  }
+
+  async updatePlayerTeam(id: string, team: string): Promise<void> {
+    await apiClient.put(`/api/v1/lineups/player/${id}/team`, { team });
   }
 
   // Remove player from lineup

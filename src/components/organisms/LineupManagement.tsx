@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../atoms/Card";
 import Badge from "../atoms/Badge";
 import { useNotifications } from "./NotificationContainer";
 import { formatDate } from "@/lib/helper";
+import { lineupService } from "@/services/lineupService";
 import {
   DndContext,
   closestCenter,
@@ -64,12 +65,15 @@ interface LineupMatch {
   venue: string;
   date: string;
   time: string;
-  status: "DRAFT" | "CONFIRMED" | "COMPLETED";
+  status: "DRAFT" | "CONFIRMED" | "COMPLETED" | "ACTIVE";
   totalPlayers: number;
   teamAPlayers: LineupPlayer[];
   teamBPlayers: LineupPlayer[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  bookedSlots?: number;
+  openSlots?: number;
+  totalSlots?: number;
 }
 
 interface PlayerCardProps {
@@ -348,7 +352,15 @@ export default function LineupManagement() {
   const fetchLineups = async () => {
     try {
       setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const transformedLineups = await lineupService.fetchLineups();
+
+      setLineups(transformedLineups);
+      if (transformedLineups.length > 0) {
+        setSelectedLineup(transformedLineups[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching lineups:", error);
+      showError("Error", "Failed to load lineups. Using fallback data.");
 
       const mockLineups: LineupMatch[] = [
         {
@@ -482,13 +494,10 @@ export default function LineupManagement() {
         },
       ];
 
-      setLineups(mockLineups);
-      if (mockLineups.length > 0) {
-        setSelectedLineup(mockLineups[0]);
-      }
-    } catch (error) {
-      console.error("Error fetching lineups:", error);
-      showError("Error", "Failed to load lineups");
+        setLineups(mockLineups);
+        if (mockLineups.length > 0) {
+          setSelectedLineup(mockLineups[0]);
+        }
     } finally {
       setLoading(false);
     }
@@ -559,7 +568,7 @@ export default function LineupManagement() {
     setOverId(over ? (over.id as string) : null);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     setDraggedPlayer(null);
@@ -572,7 +581,6 @@ export default function LineupManagement() {
 
     if (activeId === overId) return;
 
-    // Find the active player
     const allPlayers = [
       ...selectedLineup.teamAPlayers,
       ...selectedLineup.teamBPlayers,
@@ -580,11 +588,9 @@ export default function LineupManagement() {
     const activePlayer = allPlayers.find((p) => p.id === activeId);
     if (!activePlayer) return;
 
-    // Check if we're dropping on team container or another player
     let targetTeam: "A" | "B" | null = null;
     let targetIndex: number = -1;
 
-    // Check if dropping on team containers
     if (overId === "team-A-container") {
       targetTeam = "A";
       targetIndex = selectedLineup.teamAPlayers.length;
@@ -592,7 +598,6 @@ export default function LineupManagement() {
       targetTeam = "B";
       targetIndex = selectedLineup.teamBPlayers.length;
     } else {
-      // Dropping on another player
       const overPlayer = allPlayers.find((p) => p.id === overId);
       if (overPlayer) {
         targetTeam = overPlayer.team;
@@ -605,11 +610,10 @@ export default function LineupManagement() {
     }
 
     if (targetTeam === null || targetIndex === -1) return;
+    if (activePlayer.team === targetTeam) return;
 
-    // Create updated lineup
     let updatedLineup = { ...selectedLineup };
 
-    // Remove player from current team
     if (activePlayer.team === "A") {
       updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.filter(
         (p) => p.id !== activeId
@@ -620,17 +624,14 @@ export default function LineupManagement() {
       );
     }
 
-    // Update player's team
     const updatedPlayer = { ...activePlayer, team: targetTeam };
 
-    // Add player to target team at target index
     if (targetTeam === "A") {
       updatedLineup.teamAPlayers.splice(targetIndex, 0, updatedPlayer);
     } else {
       updatedLineup.teamBPlayers.splice(targetIndex, 0, updatedPlayer);
     }
 
-    // Update order numbers for both teams
     updatedLineup.teamAPlayers = updatedLineup.teamAPlayers.map(
       (player, index) => ({
         ...player,
@@ -645,21 +646,26 @@ export default function LineupManagement() {
       })
     );
 
-    // Update total players
     updatedLineup.totalPlayers =
       updatedLineup.teamAPlayers.length + updatedLineup.teamBPlayers.length;
 
     setSelectedLineup(updatedLineup);
     setHasUnsavedChanges(true);
 
-    // Update in lineups array
     setLineups((prev) =>
       prev.map((lineup) =>
         lineup.id === selectedLineup.id ? updatedLineup : lineup
       )
     );
 
-    showSuccess(`Player moved to Team ${targetTeam}`);
+    try {
+      await lineupService.updatePlayerTeam(activePlayer.id, targetTeam);
+      showSuccess(`Player moved to Team ${targetTeam}`);
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error("Error updating player team:", error);
+      showError("Error", "Failed to update player team. Changes saved locally.");
+    }
   };
 
   const getStatusColor = (status: string) => {
