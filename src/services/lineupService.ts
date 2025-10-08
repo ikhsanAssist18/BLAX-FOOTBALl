@@ -1,5 +1,4 @@
 import { apiClient } from "@/utils/api";
-import { LineupMatch, LineupPlayer } from "@/utils/lineup";
 
 interface ApiLineupResponse {
   id: string;
@@ -12,8 +11,9 @@ interface ApiLineupResponse {
   openSlots?: number;
   totalSlots?: number;
   team: number;
-  lineUp: {
-    A?: {
+  lineUp: Record<
+    string,
+    {
       GK?: {
         name: string;
         phone: string;
@@ -24,20 +24,8 @@ interface ApiLineupResponse {
         phone: string;
         type?: string;
       }>;
-    };
-    B?: {
-      GK?: {
-        name: string;
-        phone: string;
-        type?: string;
-      };
-      PLAYERS?: Array<{
-        name: string;
-        phone: string;
-        type?: string;
-      }>;
-    };
-  };
+    }
+  >;
 }
 
 interface UpdatePlayerTeamRequest {
@@ -50,6 +38,34 @@ interface UpdatePlayerTeamResponse {
   message: string;
 }
 
+interface LineupPlayer {
+  id: string;
+  name: string;
+  phone: string;
+  position: "GK" | "PLAYER";
+  team: string;
+  order: number;
+  notes?: string;
+  type?: string;
+}
+
+interface LineupMatch {
+  id: string;
+  scheduleId?: string;
+  scheduleName: string;
+  venue: string;
+  date: string;
+  time: string;
+  teams: Record<string, LineupPlayer[]>;
+  status: "DRAFT" | "CONFIRMED" | "COMPLETED" | "ACTIVE";
+  totalPlayers: number;
+  createdAt?: string;
+  updatedAt?: string;
+  bookedSlots?: number;
+  openSlots?: number;
+  totalSlots?: number;
+}
+
 export class LineupService {
   private baseUrl: string;
 
@@ -57,65 +73,42 @@ export class LineupService {
     this.baseUrl = process.env.NEXT_PUBLIC_BE || "";
   }
 
-  private async getHeaders(): Promise<HeadersInit> {
-    return {
-      "Content-Type": "application/json",
-    };
-  }
-
   private transformApiResponse(apiResponse: ApiLineupResponse): LineupMatch {
-    const teamAPlayers: LineupPlayer[] = [];
-    const teamBPlayers: LineupPlayer[] = [];
+    const allPlayers: LineupPlayer[] = [];
 
-    if (apiResponse.lineUp?.A) {
-      if (apiResponse.lineUp.A.GK) {
-        teamAPlayers.push({
-          id: `${apiResponse.id}-A-GK`,
-          name: apiResponse.lineUp.A.GK.name,
-          phone: apiResponse.lineUp.A.GK.phone,
+    // Loop semua tim dari key di lineUp (bisa A, B, C, dst)
+    Object.entries(apiResponse.lineUp || {}).forEach(([teamKey, teamData]) => {
+      if (teamData.GK) {
+        allPlayers.push({
+          id: `${apiResponse.id}-${teamKey}-GK`,
+          name: teamData.GK.name,
+          phone: teamData.GK.phone,
           position: "GK",
-          team: "A",
+          team: teamKey,
           order: 1,
         });
       }
-      if (apiResponse.lineUp.A.PLAYERS) {
-        apiResponse.lineUp.A.PLAYERS.forEach((player, index) => {
-          teamAPlayers.push({
-            id: `${apiResponse.id}-A-P-${index}`,
-            name: player.name,
-            phone: player.phone,
-            position: "PLAYER",
-            team: "A",
-            order: teamAPlayers.length + 1,
-          });
-        });
-      }
-    }
 
-    if (apiResponse.lineUp?.B) {
-      if (apiResponse.lineUp.B.GK) {
-        teamBPlayers.push({
-          id: `${apiResponse.id}-B-GK`,
-          name: apiResponse.lineUp.B.GK.name,
-          phone: apiResponse.lineUp.B.GK.phone,
-          position: "GK",
-          team: "B",
-          order: 1,
-        });
-      }
-      if (apiResponse.lineUp.B.PLAYERS) {
-        apiResponse.lineUp.B.PLAYERS.forEach((player, index) => {
-          teamBPlayers.push({
-            id: `${apiResponse.id}-B-P-${index}`,
+      if (teamData.PLAYERS) {
+        teamData.PLAYERS.forEach((player, index) => {
+          allPlayers.push({
+            id: `${apiResponse.id}-${teamKey}-P-${index}`,
             name: player.name,
             phone: player.phone,
             position: "PLAYER",
-            team: "B",
-            order: teamBPlayers.length + 1,
+            team: teamKey,
+            order: index + 2, // setelah GK
           });
         });
       }
-    }
+    });
+
+    // Kelompokkan pemain berdasarkan tim
+    const groupedTeams: Record<string, LineupPlayer[]> = {};
+    allPlayers.forEach((player) => {
+      if (!groupedTeams[player.team]) groupedTeams[player.team] = [];
+      groupedTeams[player.team].push(player);
+    });
 
     return {
       id: apiResponse.id,
@@ -125,9 +118,8 @@ export class LineupService {
       time: apiResponse.time,
       status:
         apiResponse.status === "ACTIVE" ? "CONFIRMED" : apiResponse.status,
-      totalPlayers: teamAPlayers.length + teamBPlayers.length,
-      teamAPlayers,
-      teamBPlayers,
+      totalPlayers: allPlayers.length,
+      teams: groupedTeams, // <-- gunakan dinamis
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       bookedSlots: apiResponse.bookedSlots,
@@ -139,9 +131,11 @@ export class LineupService {
   async fetchLineups(): Promise<LineupMatch[]> {
     const response = await apiClient.get("/api/v1/matches/schedules-lineup");
 
-    return Array.isArray(response)
-      ? response.map(this.transformApiResponse)
-      : response.data?.map(this.transformApiResponse) || [];
+    const data = Array.isArray(response) ? response : response.data || [];
+
+    return data.map((item: ApiLineupResponse) =>
+      this.transformApiResponse(item)
+    );
   }
 
   async updatePlayerTeam(
@@ -150,7 +144,7 @@ export class LineupService {
   ): Promise<UpdatePlayerTeamResponse> {
     const requestBody: UpdatePlayerTeamRequest = {
       id: playerId,
-      team: team,
+      team,
     };
 
     const response = await apiClient.put(
