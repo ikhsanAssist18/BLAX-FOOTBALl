@@ -396,9 +396,11 @@ export default function SchedulesCarousel() {
                                     />
                                   </div>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    {(Number(match.bookedSlots) /
-                                      Number(match.totalSlots)) *
-                                      100}
+                                    {Math.round(
+                                      (Number(match.bookedSlots) /
+                                        Number(match.totalSlots)) *
+                                        100
+                                    )}
                                     % terisi
                                   </p>
                                 </div>
