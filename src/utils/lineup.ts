@@ -15,11 +15,13 @@ export interface ApiLineupResponse {
     string,
     {
       GK?: {
+        id: string;
         name: string;
         phone: string;
         type?: string;
       };
       PLAYERS?: Array<{
+        id: string;
         name: string;
         phone: string;
         type?: string;
@@ -40,6 +42,7 @@ export interface UpdatePlayerTeamResponse {
 
 export interface LineupPlayer {
   id: string;
+  realId: string;
   name: string;
   phone: string;
   position: "GK" | "PLAYER";
@@ -56,9 +59,8 @@ export interface LineupMatch {
   venue: string;
   date: string;
   time: string;
+  totalTeams: number;
   teams: Record<string, LineupPlayer[]>;
-  teamAPlayers: LineupPlayer[];
-  teamBPlayers: LineupPlayer[];
   status: "DRAFT" | "CONFIRMED" | "COMPLETED" | "ACTIVE";
   totalPlayers: number;
   createdAt?: string;
@@ -69,49 +71,60 @@ export interface LineupMatch {
 }
 
 export class LineupService {
-  private baseUrl: string;
-
-  constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_BE || "";
-  }
-
   private transformApiResponse(apiResponse: ApiLineupResponse): LineupMatch {
     const allPlayers: LineupPlayer[] = [];
+    const groupedTeams: Record<string, LineupPlayer[]> = {};
 
+    // Ambil data lineup dari response
     Object.entries(apiResponse.lineUp || {}).forEach(([teamKey, teamData]) => {
+      if (!groupedTeams[teamKey]) {
+        groupedTeams[teamKey] = [];
+      }
+
+      // GK
       if (teamData.GK) {
-        allPlayers.push({
-          id: `${apiResponse.id}-${teamKey}-GK`,
+        const gkPlayer: LineupPlayer = {
+          id: teamData.GK.id,
+          realId: apiResponse.id,
           name: teamData.GK.name,
           phone: teamData.GK.phone,
           position: "GK",
           team: teamKey,
           order: 1,
-        });
+          type: teamData.GK.type,
+        };
+        allPlayers.push(gkPlayer);
+        groupedTeams[teamKey].push(gkPlayer);
       }
 
+      // PLAYERS
       if (teamData.PLAYERS) {
         teamData.PLAYERS.forEach((player, index) => {
-          allPlayers.push({
-            id: `${apiResponse.id}-${teamKey}-P-${index}`,
+          const lineupPlayer: LineupPlayer = {
+            id: player.id,
+            realId: apiResponse.id,
             name: player.name,
             phone: player.phone,
             position: "PLAYER",
             team: teamKey,
             order: index + 2,
-          });
+            type: player.type,
+          };
+          allPlayers.push(lineupPlayer);
+          groupedTeams[teamKey].push(lineupPlayer);
         });
       }
     });
 
-    const groupedTeams: Record<string, LineupPlayer[]> = {};
-    allPlayers.forEach((player) => {
-      if (!groupedTeams[player.team]) groupedTeams[player.team] = [];
-      groupedTeams[player.team].push(player);
-    });
-
-    const teamAPlayers = groupedTeams["A"] || [];
-    const teamBPlayers = groupedTeams["B"] || [];
+    // ==== Tambahkan tim kosong jika belum ada ====
+    const totalTeams = apiResponse.team || Object.keys(groupedTeams).length;
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    for (let i = 0; i < totalTeams; i++) {
+      const teamLabel = alphabet[i];
+      if (!groupedTeams[teamLabel]) {
+        groupedTeams[teamLabel] = []; // tim kosong
+      }
+    }
 
     return {
       id: apiResponse.id,
@@ -122,9 +135,8 @@ export class LineupService {
       status:
         apiResponse.status === "ACTIVE" ? "CONFIRMED" : apiResponse.status,
       totalPlayers: allPlayers.length,
+      totalTeams,
       teams: groupedTeams,
-      teamAPlayers,
-      teamBPlayers,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       bookedSlots: apiResponse.bookedSlots,
@@ -135,9 +147,7 @@ export class LineupService {
 
   async fetchLineups(): Promise<LineupMatch[]> {
     const response = await apiClient.get("/api/v1/matches/schedules-lineup");
-
     const data = Array.isArray(response) ? response : response.data || [];
-
     return data.map((item: ApiLineupResponse) =>
       this.transformApiResponse(item)
     );
@@ -147,11 +157,7 @@ export class LineupService {
     playerId: string,
     team: string
   ): Promise<UpdatePlayerTeamResponse> {
-    const requestBody: UpdatePlayerTeamRequest = {
-      id: playerId,
-      team,
-    };
-
+    const requestBody: UpdatePlayerTeamRequest = { id: playerId, team };
     const response = await apiClient.put(
       `/api/v1/lineup/lineup-team`,
       requestBody
