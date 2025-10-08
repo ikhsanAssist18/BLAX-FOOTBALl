@@ -1,6 +1,6 @@
 import { apiClient } from "@/utils/api";
 
-interface ApiLineupResponse {
+export interface ApiLineupResponse {
   id: string;
   scheduleName: string;
   venue: string;
@@ -28,17 +28,17 @@ interface ApiLineupResponse {
   >;
 }
 
-interface UpdatePlayerTeamRequest {
+export interface UpdatePlayerTeamRequest {
   id: string;
   team: string;
 }
 
-interface UpdatePlayerTeamResponse {
+export interface UpdatePlayerTeamResponse {
   success: boolean;
   message: string;
 }
 
-interface LineupPlayer {
+export interface LineupPlayer {
   id: string;
   name: string;
   phone: string;
@@ -49,7 +49,7 @@ interface LineupPlayer {
   type?: string;
 }
 
-interface LineupMatch {
+export interface LineupMatch {
   id: string;
   scheduleId?: string;
   scheduleName: string;
@@ -57,6 +57,8 @@ interface LineupMatch {
   date: string;
   time: string;
   teams: Record<string, LineupPlayer[]>;
+  teamAPlayers: LineupPlayer[];
+  teamBPlayers: LineupPlayer[];
   status: "DRAFT" | "CONFIRMED" | "COMPLETED" | "ACTIVE";
   totalPlayers: number;
   createdAt?: string;
@@ -76,7 +78,6 @@ export class LineupService {
   private transformApiResponse(apiResponse: ApiLineupResponse): LineupMatch {
     const allPlayers: LineupPlayer[] = [];
 
-    // Loop semua tim dari key di lineUp (bisa A, B, C, dst)
     Object.entries(apiResponse.lineUp || {}).forEach(([teamKey, teamData]) => {
       if (teamData.GK) {
         allPlayers.push({
@@ -97,18 +98,20 @@ export class LineupService {
             phone: player.phone,
             position: "PLAYER",
             team: teamKey,
-            order: index + 2, // setelah GK
+            order: index + 2,
           });
         });
       }
     });
 
-    // Kelompokkan pemain berdasarkan tim
     const groupedTeams: Record<string, LineupPlayer[]> = {};
     allPlayers.forEach((player) => {
       if (!groupedTeams[player.team]) groupedTeams[player.team] = [];
       groupedTeams[player.team].push(player);
     });
+
+    const teamAPlayers = groupedTeams["A"] || [];
+    const teamBPlayers = groupedTeams["B"] || [];
 
     return {
       id: apiResponse.id,
@@ -119,7 +122,9 @@ export class LineupService {
       status:
         apiResponse.status === "ACTIVE" ? "CONFIRMED" : apiResponse.status,
       totalPlayers: allPlayers.length,
-      teams: groupedTeams, // <-- gunakan dinamis
+      teams: groupedTeams,
+      teamAPlayers,
+      teamBPlayers,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       bookedSlots: apiResponse.bookedSlots,

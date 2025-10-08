@@ -24,7 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../atoms/Card";
 import Badge from "../atoms/Badge";
 import { useNotifications } from "./NotificationContainer";
 import { formatDate } from "@/lib/helper";
-import { lineupService } from "@/services/lineupService";
+import { lineupService, LineupMatch, LineupPlayer } from "@/utils/lineup";
 import {
   DndContext,
   closestCenter,
@@ -49,32 +49,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-interface LineupPlayer {
-  id: string;
-  name: string;
-  phone: string;
-  position: "GK" | "PLAYER";
-  team: "A" | "B";
-  order: number;
-  notes?: string;
-}
-
-interface LineupMatch {
-  id: string;
-  scheduleName: string;
-  venue: string;
-  date: string;
-  time: string;
-  status: "DRAFT" | "CONFIRMED" | "COMPLETED" | "ACTIVE";
-  totalPlayers: number;
-  teamAPlayers: LineupPlayer[];
-  teamBPlayers: LineupPlayer[];
-  createdAt?: string;
-  updatedAt?: string;
-  bookedSlots?: number;
-  openSlots?: number;
-  totalSlots?: number;
-}
 
 interface PlayerCardProps {
   player: LineupPlayer;
@@ -360,144 +334,7 @@ export default function LineupManagement() {
       }
     } catch (error) {
       console.error("Error fetching lineups:", error);
-      showError("Error", "Failed to load lineups. Using fallback data.");
-
-      const mockLineups: LineupMatch[] = [
-        {
-          id: "1",
-          scheduleName: "Fun Game Weekday - January 20",
-          venue: "Lapangan Futsal Central",
-          date: "2025-01-20",
-          time: "19:00",
-          status: "DRAFT",
-          totalPlayers: 16,
-          teamAPlayers: [
-            {
-              id: "p1",
-              name: "John Doe",
-              phone: "08123456789",
-              position: "GK",
-              team: "A",
-              order: 1,
-              notes: "Experienced goalkeeper with excellent reflexes",
-            },
-            {
-              id: "p2",
-              name: "Jane Smith",
-              phone: "08987654321",
-              position: "PLAYER",
-              team: "A",
-              order: 2,
-            },
-            {
-              id: "p3",
-              name: "Mike Johnson",
-              phone: "08555666777",
-              position: "PLAYER",
-              team: "A",
-              order: 3,
-              notes: "Strong defender, prefers left side",
-            },
-            {
-              id: "p7",
-              name: "Robert Taylor",
-              phone: "08777888999",
-              position: "PLAYER",
-              team: "A",
-              order: 4,
-            },
-            {
-              id: "p8",
-              name: "Emily Davis",
-              phone: "08666777888",
-              position: "PLAYER",
-              team: "A",
-              order: 5,
-            },
-          ],
-          teamBPlayers: [
-            {
-              id: "p4",
-              name: "Sarah Wilson",
-              phone: "08111222333",
-              position: "GK",
-              team: "B",
-              order: 1,
-            },
-            {
-              id: "p5",
-              name: "David Brown",
-              phone: "08444555666",
-              position: "PLAYER",
-              team: "B",
-              order: 2,
-              notes: "Fast winger with good ball control",
-            },
-            {
-              id: "p6",
-              name: "Chris Anderson",
-              phone: "08222333444",
-              position: "PLAYER",
-              team: "B",
-              order: 3,
-            },
-          ],
-          createdAt: "2025-01-15T10:00:00Z",
-          updatedAt: "2025-01-15T10:00:00Z",
-        },
-        {
-          id: "2",
-          scheduleName: "Weekend Tournament - January 25",
-          venue: "Sports Complex Arena",
-          date: "2025-01-25",
-          time: "15:00",
-          status: "CONFIRMED",
-          totalPlayers: 20,
-          teamAPlayers: [
-            {
-              id: "p9",
-              name: "Alex Martinez",
-              phone: "08123123123",
-              position: "GK",
-              team: "A",
-              order: 1,
-            },
-            {
-              id: "p10",
-              name: "Lisa Chen",
-              phone: "08234234234",
-              position: "PLAYER",
-              team: "A",
-              order: 2,
-            },
-          ],
-          teamBPlayers: [
-            {
-              id: "p11",
-              name: "Tom Garcia",
-              phone: "08345345345",
-              position: "GK",
-              team: "B",
-              order: 1,
-            },
-            {
-              id: "p12",
-              name: "Anna Rodriguez",
-              phone: "08456456456",
-              position: "PLAYER",
-              team: "B",
-              order: 2,
-            },
-          ],
-          createdAt: "2025-01-16T14:00:00Z",
-          updatedAt: "2025-01-18T10:00:00Z",
-        },
-      ];
-
-      setLineups(mockLineups);
-      if (mockLineups.length > 0) {
-        setSelectedLineup(mockLineups[0]);
-      }
+      showError("Error", "Failed to load lineups from backend.");
     } finally {
       setLoading(false);
     }
@@ -588,7 +425,7 @@ export default function LineupManagement() {
     const activePlayer = allPlayers.find((p) => p.id === activeId);
     if (!activePlayer) return;
 
-    let targetTeam: "A" | "B" | null = null;
+    let targetTeam: string | null = null;
     let targetIndex: number = -1;
 
     if (overId === "team-A-container") {
@@ -611,6 +448,8 @@ export default function LineupManagement() {
 
     if (targetTeam === null || targetIndex === -1) return;
     if (activePlayer.team === targetTeam) return;
+
+    saveToHistory(selectedLineup, `Move player to Team ${targetTeam}`);
 
     let updatedLineup = { ...selectedLineup };
 

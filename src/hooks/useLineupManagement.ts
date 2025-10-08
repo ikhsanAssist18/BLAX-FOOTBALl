@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LineupMatch, LineupPlayer } from "@/utils/lineup";
-import { lineupService } from "@/services/lineupService";
+import { LineupMatch, LineupPlayer, lineupService } from "@/utils/lineup";
 
 interface UseLineupManagementOptions {
   onError?: (message: string) => void;
