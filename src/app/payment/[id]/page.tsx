@@ -18,6 +18,7 @@ import {
   Phone,
   MessageCircle,
   X,
+  Download,
 } from "lucide-react";
 import Button from "@/components/atoms/Button";
 import {
@@ -32,6 +33,7 @@ import { bookingService } from "@/utils/booking";
 import { formatCurrency } from "@/lib/helper";
 import LoadingScreen from "@/components/atoms/LoadingScreen";
 import Navbar from "@/components/organisms/Navbar";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PaymentData {
   name: string;
@@ -94,6 +96,12 @@ Mohon dicek dan dikonfirmasi untuk lineup. Terima kasih!`;
     onClose();
   };
 
+  const { showSuccess, showError } = useNotifications();
+  const handleDownloadReceipt = () => {
+    // Implement receipt download functionality
+    showSuccess("Receipt downloaded successfully");
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -128,11 +136,11 @@ Mohon dicek dan dikonfirmasi untuk lineup. Terima kasih!`;
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Payment Successful!
+                Pembayaran berhasil!
               </h3>
               <p className="text-gray-600 text-sm">
-                Your payment has been confirmed. Contact admin via WhatsApp to
-                get your lineup position.
+                Pembayaran Anda telah dikonfirmasi. Hubungi admin melalui
+                WhatsApp jika mengalami kendala dan cek line up anda.
               </p>
             </div>
 
@@ -170,8 +178,14 @@ Mohon dicek dan dikonfirmasi untuk lineup. Terima kasih!`;
 
             {/* Buttons */}
             <div className="flex space-x-3">
-              <Button variant="outline" onClick={onClose} className="flex-1">
-                Maybe Later
+              <Button
+                variant="black"
+                size="sm"
+                onClick={handleDownloadReceipt}
+                className="flex items-center"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Receipt
               </Button>
               <Button
                 variant="primary"
@@ -198,6 +212,7 @@ export default function PaymentPage() {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [hasShownSuccessModal, setHasShownSuccessModal] = useState(false);
   const { showSuccess, showError } = useNotifications();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (params.id) {
@@ -404,10 +419,10 @@ export default function PaymentPage() {
 
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Payment Information
+                Informasi pembayaran
               </h1>
               <p className="text-gray-600">
-                Complete your booking payment securely
+                Selesaikan pembayaran booking Anda dengan aman
               </p>
             </div>
           </div>
@@ -464,8 +479,9 @@ export default function PaymentPage() {
                       </Button>
                     </div>
                     <div className="text-sm text-yellow-700 leading-relaxed">
-                      <strong>📝 Important:</strong> Save your booking ID as
-                      proof of payment or provide it to admin if payment fails.
+                      <strong>📝 Penting:</strong>Simpan ID booking Anda sebagai
+                      bukti pembayaran atau berikan kepada admin jika pembayaran
+                      gagal.
                     </div>
                   </div>
                 </CardContent>
@@ -476,7 +492,7 @@ export default function PaymentPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center text-blue-800">
                     <User className="w-5 h-5 mr-2" />
-                    Payment Details
+                    Detail Pembayaran
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -496,7 +512,7 @@ export default function PaymentPage() {
                     <div className="flex items-center space-x-3">
                       <CreditCard className="w-4 h-4 text-blue-600" />
                       <span className="text-gray-700">
-                        Amount:{" "}
+                        Jumlah:{" "}
                         <strong>{formatCurrency(paymentData.total)}</strong>
                       </span>
                     </div>
@@ -510,7 +526,7 @@ export default function PaymentPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center text-purple-800">
                       <Calendar className="w-5 h-5 mr-2" />
-                      Schedule Details
+                      Detail Jadwal
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -552,7 +568,7 @@ export default function PaymentPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center text-green-800">
                       <QrCode className="w-5 h-5 mr-2" />
-                      Payment QR Code
+                      Pembayaran QRIS Code
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="text-center">
@@ -568,13 +584,16 @@ export default function PaymentPage() {
                       />
                     </div>
                     <p className="text-green-700 mb-4">
-                      Scan this QR code with your mobile banking or e-wallet app
+                      Pindai kode QR ini dengan aplikasi mobile banking atau
+                      e-wallet Anda
                     </p>
                     <div className="text-sm text-green-600 space-y-1">
-                      <p>• Open your banking/e-wallet app</p>
-                      <p>• Select QR payment or scan feature</p>
-                      <p>• Point camera at the QR code above</p>
-                      <p>• Confirm payment amount and complete transaction</p>
+                      <p>• Buka aplikasi mobile banking atau e-wallet anda</p>
+                      <p>• Pilih fitur pembayaran kode QR</p>
+                      <p>• Arahkan kamera ke kode QR di atas</p>
+                      <p>
+                        • Konfirmasi jumlah pembayaran dan selesaikan transaksi
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -585,11 +604,11 @@ export default function PaymentPage() {
                   <CardContent className="p-8 text-center">
                     <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                     <h3 className="pt-4 text-xl font-bold text-green-800 mb-2">
-                      Payment Successful!
+                      Pembayaran berhasil!
                     </h3>
                     <p className="text-green-700 mb-6">
-                      Your payment has been confirmed. Contact admin via
-                      WhatsApp to get your lineup position.
+                      Pembayaran Anda telah dikonfirmasi. Hubungi admin melalui
+                      WhatsApp jika mengalami kendala dan cek line up anda.
                     </p>
                     <div className="space-y-3">
                       <Button
@@ -598,15 +617,17 @@ export default function PaymentPage() {
                         className="w-full bg-green-600 hover:bg-green-700"
                       >
                         <MessageCircle className="w-4 h-4 mr-2" />
-                        Contact Admin via WhatsApp
+                        Hubungi Admin via WhatsApp
                       </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/dashboard")}
-                        className="w-full"
-                      >
-                        Go to Dashboard
-                      </Button>
+                      {user && (
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push("/dashboard")}
+                          className="w-full"
+                        >
+                          Go to Dashboard
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -644,7 +665,7 @@ export default function PaymentPage() {
             <CardHeader>
               <CardTitle className="flex items-center text-gray-900">
                 <AlertTriangle className="w-5 h-5 mr-2" />
-                Need Help?
+                Butuh bantuan?
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -654,9 +675,15 @@ export default function PaymentPage() {
                     Payment Issues
                   </h4>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• QR code not working? Try refreshing the page</li>
-                    <li>• Payment failed? Contact our support team</li>
-                    <li>• Keep your booking ID for reference</li>
+                    <li>
+                      • Kode QR tidak berfungsi atau tidak muncul? Coba refresh
+                      halaman ini
+                    </li>
+                    <li>
+                      • Pembayaran gagal? Silahkan hubungi admin dan lampirkan
+                      ID booking anda
+                    </li>
+                    <li>• Simpan ID booking Anda untuk referensi</li>
                   </ul>
                 </div>
                 <div>

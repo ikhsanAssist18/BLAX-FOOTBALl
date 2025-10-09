@@ -230,23 +230,23 @@ export default function PaymentPreviewModal({
 <body>
     <div class="receipt-container">
         <div class="receipt-header">
-            <h1>Payment Receipt</h1>
-            <p>Thank you for your booking</p>
+            <h1>Bukti Pembayaran</h1>
+            <p>Terimakasih atas pemesanan anda</p>
         </div>
         
         <div class="receipt-body">
             <div style="text-align: center;">
-                <span class="status-badge">✓ Payment Confirmed</span>
+                <span class="status-badge">✓ Pembayaran terkonfirmasi</span>
             </div>
             
             <div class="amount-section">
                 <div class="amount">${formatCurrency(data.amount)}</div>
-                <p style="color: #059669; font-weight: 600;">Successfully Paid</p>
+                <p style="color: #059669; font-weight: 600;">Berhasil dibayar</p>
             </div>
             
             <div class="details-section">
                 <div class="detail-group">
-                    <h3>💳 Payment Information</h3>
+                    <h3>💳 Informasi pembayaran</h3>
                     <div class="detail-item">
                         <span class="detail-label">Booking ID</span>
                         <span class="detail-value booking-id">${
@@ -272,7 +272,7 @@ export default function PaymentPreviewModal({
                 <div class="detail-group">
                     <h3>📅 Booking Details</h3>
                     <div class="detail-item">
-                        <span class="detail-label">Customer Name</span>
+                        <span class="detail-label">Name</span>
                         <span class="detail-value">${data.customerName}</span>
                     </div>
                     <div class="detail-item">
@@ -280,7 +280,7 @@ export default function PaymentPreviewModal({
                         <span class="detail-value">${data.customerPhone}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Schedule</span>
+                        <span class="detail-label">Jadwal</span>
                         <span class="detail-value">${data.scheduleName}</span>
                     </div>
                     <div class="detail-item">
@@ -302,14 +302,14 @@ export default function PaymentPreviewModal({
         </div>
         
         <div class="footer-section">
-            <p><strong>Transaction completed successfully on ${
-              data.paymentDate
-            } at ${data.paymentTime} WIB</strong></p>
-            <p>Keep this receipt for your records</p>
+            <p><strong>Transaksi berhasil pada ${data.paymentDate} at ${
+      data.paymentTime
+    } WIB</strong></p>
+            <p>Simpan struk ini untuk arsip Anda</p>
             
             <div class="company-info">
-                <h4>Sports Booking System</h4>
-                <p>Customer Service: support@sportsbooking.com</p>
+                <h4>Blax football</h4>
+                <p>Customer Service: support@blaxfootball.com</p>
                 <p>Phone: +62 xxx-xxx-xxxx</p>
                 <p>Thank you for choosing our service!</p>
             </div>
@@ -390,10 +390,10 @@ export default function PaymentPreviewModal({
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Payment Successful
+                  Pembayaran berhasil
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Your booking has been confirmed
+                  Booking anda sudah dikonfirmasi
                 </p>
               </div>
             </div>
@@ -435,7 +435,7 @@ export default function PaymentPreviewModal({
                         {formatCurrency(paymentData.amount)}
                       </div>
                       <Badge className="bg-green-100 text-green-800 border-green-200">
-                        Payment Confirmed
+                        Pembayaran dikonfirmasi
                       </Badge>
                     </div>
 
@@ -444,7 +444,7 @@ export default function PaymentPreviewModal({
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                           <CreditCard className="w-5 h-5 mr-2 text-green-600" />
-                          Payment Information
+                          Informasi pembayaran
                         </h3>
 
                         <div className="space-y-3">
@@ -540,11 +540,10 @@ export default function PaymentPreviewModal({
                     Booking Confirmed!
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    Your payment has been processed successfully. You will
-                    receive a confirmation message shortly.
+                    Pembayaran anda telah berhasil diproses.
                   </p>
                   <div className="text-sm text-gray-500">
-                    Transaction completed on {paymentData.paymentDate} at{" "}
+                    Transaksi berhasil pada {paymentData.paymentDate}{" "}
                     {paymentData.paymentTime} WIB
                   </div>
                 </div>
