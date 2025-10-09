@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     "bola",
     "main bola",
     "mabol",
+    "komunitas",
+    "mabar",
+    "main bareng",
+    "sepakbola",
   ],
   authors: [{ name: "DamnSans Team" }],
   openGraph: {
